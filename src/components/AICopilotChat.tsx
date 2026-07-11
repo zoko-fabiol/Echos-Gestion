@@ -3,6 +3,7 @@ import { Bot, X, Send, Sparkles, Mic, MicOff, Volume2, VolumeX, Paperclip, FileT
 import { askMistral } from '../services/mistralService';
 import { useAuth } from '../context/AuthContext';
 import { AppLogo } from './AppLogo';
+import { isNativeApp, speakNative, stopSpeechNative } from '../utils/capacitorUtils';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -18,7 +19,7 @@ interface Message {
 }
 
 export const AICopilotChat: React.FC = () => {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isOnline } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -60,7 +61,9 @@ export const AICopilotChat: React.FC = () => {
   // Clean speech on unmount or close
   useEffect(() => {
     return () => {
-      if (window.speechSynthesis) {
+      if (isNativeApp()) {
+        stopSpeechNative();
+      } else if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
       if (recognitionRef.current) {
@@ -103,13 +106,12 @@ export const AICopilotChat: React.FC = () => {
     }
   }, []);
 
-  if (!isLoggedIn) return null;
+  if (!isLoggedIn || !isOnline) return null;
 
   // Speak function
   const speak = (text: string, force: boolean = false) => {
-    if ((isMuted && !force) || !window.speechSynthesis) return;
+    if (isMuted && !force) return;
     
-    window.speechSynthesis.cancel();
     const cleanText = text
       .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "") // Emojis
       .replace(/\*\*/g, "") // Gras
@@ -123,6 +125,13 @@ export const AICopilotChat: React.FC = () => {
 
     if (!cleanText) return;
 
+    if (isNativeApp()) {
+      speakNative(cleanText);
+      return;
+    }
+
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'fr-FR';
     
@@ -149,7 +158,9 @@ export const AICopilotChat: React.FC = () => {
     if (isListening) {
       recognitionRef.current.stop();
     } else {
-      if (window.speechSynthesis) {
+      if (isNativeApp()) {
+        stopSpeechNative();
+      } else if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
       try {
@@ -317,7 +328,9 @@ export const AICopilotChat: React.FC = () => {
       }
     } else {
       setIsMuted(true);
-      if (window.speechSynthesis) {
+      if (isNativeApp()) {
+        stopSpeechNative();
+      } else if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
     }
@@ -328,7 +341,9 @@ export const AICopilotChat: React.FC = () => {
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
     }
-    if (window.speechSynthesis) {
+    if (isNativeApp()) {
+      stopSpeechNative();
+    } else if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
   };
