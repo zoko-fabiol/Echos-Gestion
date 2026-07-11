@@ -297,67 +297,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Force offline mode if offline
       const forceOffline = !isOnline;
+      let useOfflineFallback = forceOffline;
 
       if (!forceOffline) {
-        // --- ONLINE AUTH ---
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCred.user;
+        try {
+          // --- ONLINE AUTH ---
+          const userCred = await signInWithEmailAndPassword(auth, email, password);
+          const user = userCred.user;
 
-        // Fetch profile
-        const docSnap = await getDoc(doc(firestore, 'userAccounts', user.uid));
-        let userProfile: UserAccount;
+          // Fetch profile
+          const docSnap = await getDoc(doc(firestore, 'userAccounts', user.uid));
+          let userProfile: UserAccount;
 
-        if (docSnap.exists()) {
-          userProfile = docSnap.data() as UserAccount;
-        } else {
-          // Auto-create initial profile if not found (admin if first user, or user)
-          const usersSnap = await getDocs(collection(firestore, 'userAccounts'));
-          const isFirstUser = usersSnap.empty;
+          if (docSnap.exists()) {
+            userProfile = docSnap.data() as UserAccount;
+          } else {
+            // Auto-create initial profile if not found (admin if first user, or user)
+            const usersSnap = await getDocs(collection(firestore, 'userAccounts'));
+            const isFirstUser = usersSnap.empty;
 
-          userProfile = {
-            uid: user.uid,
-            email: user.email || email,
-            displayName: user.displayName || email.split('@')[0],
-            role: isFirstUser ? 'admin' : 'user',
-            status: 'active',
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          };
-          await setDoc(doc(firestore, 'userAccounts', user.uid), userProfile);
-        }
+            userProfile = {
+              uid: user.uid,
+              email: user.email || email,
+              displayName: user.displayName || email.split('@')[0],
+              role: isFirstUser ? 'admin' : 'user',
+              status: 'active',
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            };
+            await setDoc(doc(firestore, 'userAccounts', user.uid), userProfile);
+          }
 
-        if (userProfile.status !== 'active') {
-          await signOut(auth);
-          throw new Error('Ce compte a été désactivé par l\'administrateur.');
-        }
+          if (userProfile.status !== 'active') {
+            await signOut(auth);
+            throw new Error('Ce compte a été désactivé par l\'administrateur.');
+          }
 
-        // Check if domain is trusted (echosdechezmoi.com)
-        const domain = email.split('@')[1] || '';
-        const isTrustedDomain = ALLOWED_EMAIL_DOMAINS.some(d => domain.toLowerCase() === d.toLowerCase()) || email.includes('echosdechezmoi');
+          // Check if domain is trusted (echosdechezmoi.com)
+          const domain = email.split('@')[1] || '';
+          const isTrustedDomain = ALLOWED_EMAIL_DOMAINS.some(d => domain.toLowerCase() === d.toLowerCase()) || email.includes('echosdechezmoi');
 
-        // Check email verification requirements (excluding trusted domains or if verification disabled)
-        const isVerifiedCustom = (userProfile as any).emailVerified === true;
-        if (!user.emailVerified && !isVerifiedCustom && !isTrustedDomain) {
+          // Check email verification requirements (excluding trusted domains or if verification disabled)
+          const isVerifiedCustom = (userProfile as any).emailVerified === true;
+          if (!user.emailVerified && !isVerifiedCustom && !isTrustedDomain) {
+            setCurrentUser(userProfile);
+            setEmailVerificationRequired(true);
+            await triggerPinVerification(email, user.uid);
+            setLoginLoading(false);
+            return;
+          }
+
+          // Successful Online Login
+          const localHashedToken = await hashString(email + password);
+          userProfile.hashedToken = localHashedToken;
+          userProfile.lastEmailVerificationCheck = Date.now();
+          (userProfile as any).emailVerified = true;
+
+          await db.userAccounts.put(userProfile);
           setCurrentUser(userProfile);
-          setEmailVerificationRequired(true);
-          await triggerPinVerification(email, user.uid);
-          setLoginLoading(false);
-          return;
+          setIsLoggedIn(true);
+          localStorage.setItem('stock_expert_user_session', JSON.stringify(userProfile));
+          startRealtimeSync();
+        } catch (authErr: any) {
+          // If network error (offline WebView state or server unreachable), fallback to offline mode
+          const isNetworkError = 
+            authErr.code === 'auth/network-request-failed' ||
+            authErr.message?.toLowerCase().includes('network') ||
+            authErr.message?.toLowerCase().includes('failed to fetch') ||
+            authErr.message?.toLowerCase().includes('load failed') ||
+            authErr.message?.toLowerCase().includes('typerror: fetch');
+
+          if (isNetworkError) {
+            console.warn('[Auth] Online login failed due to network request error, falling back to offline mode...', authErr);
+            useOfflineFallback = true;
+          } else {
+            throw authErr;
+          }
         }
+      }
 
-        // Successful Online Login
-        const localHashedToken = await hashString(email + password);
-        userProfile.hashedToken = localHashedToken;
-        userProfile.lastEmailVerificationCheck = Date.now();
-        (userProfile as any).emailVerified = true;
-
-        await db.userAccounts.put(userProfile);
-        setCurrentUser(userProfile);
-        setIsLoggedIn(true);
-        localStorage.setItem('stock_expert_user_session', JSON.stringify(userProfile));
-        startRealtimeSync();
-
-      } else {
+      if (useOfflineFallback) {
         // --- OFFLINE / FALLBACK AUTH ---
         const cachedUsers = await db.userAccounts.toArray();
         let profile = cachedUsers.find(u => u.email.toLowerCase() === email);
