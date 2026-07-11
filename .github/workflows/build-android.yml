@@ -51,6 +51,33 @@ jobs:
             npx cap add android
           fi
 
+      - name: Inject Android Permissions
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "android/app/src/main/AndroidManifest.xml";
+            if (fs.existsSync(path)) {
+              let content = fs.readFileSync(path, "utf8");
+              const permissions = [
+                "<uses-permission android:name=\"android.permission.CAMERA\" />",
+                "<uses-permission android:name=\"android.permission.RECORD_AUDIO\" />",
+                "<uses-permission android:name=\"android.permission.MODIFY_AUDIO_SETTINGS\" />",
+                "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" />",
+                "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" android:maxSdkVersion=\"28\" />",
+                "<uses-permission android:name=\"android.permission.READ_MEDIA_IMAGES\" />"
+              ];
+              const newPermissions = permissions.filter(p => !content.includes(p.split("android.permission.")[1].split("\"")[0]));
+              if (newPermissions.length > 0) {
+                const insertIndex = content.indexOf("<application");
+                if (insertIndex !== -1) {
+                  content = content.slice(0, insertIndex) + "    " + newPermissions.join("\n    ") + "\n\n    " + content.slice(insertIndex);
+                  fs.writeFileSync(path, content, "utf8");
+                  console.log("Permissions injected: " + newPermissions.join(", "));
+                }
+              }
+            }
+          '
+
       - name: Sync Capacitor Android Project
         run: npx cap sync android
 
