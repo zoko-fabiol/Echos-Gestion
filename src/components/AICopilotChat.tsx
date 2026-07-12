@@ -379,6 +379,10 @@ export const AICopilotChat: React.FC = () => {
       }
     } else {
       setIsMuted(true);
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
       if (isNativeApp()) {
         stopSpeechNative();
       } else if (window.speechSynthesis) {
@@ -391,6 +395,10 @@ export const AICopilotChat: React.FC = () => {
     setIsOpen(false);
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
+    }
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
     }
     if (isNativeApp()) {
       stopSpeechNative();
