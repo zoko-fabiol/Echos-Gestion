@@ -408,7 +408,7 @@ export const AICopilotChat: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-20 right-6 lg:bottom-6 z-50 font-sans">
+    <div className="fixed bottom-24 right-6 lg:bottom-6 z-50 font-sans">
       {/* Floating Action Button */}
       {!isOpen && (
         <button

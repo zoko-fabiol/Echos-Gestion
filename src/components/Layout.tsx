@@ -266,6 +266,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         {/* Viewport for Pages */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-36 lg:pb-6 bg-slate-50 dark:bg-slate-950">
           {children}
+          {/* Safety spacer to prevent content from being hidden behind the mobile bottom nav bar */}
+          <div className="h-24 w-full lg:hidden flex-shrink-0" />
         </main>
       </div>
 
