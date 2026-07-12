@@ -7,6 +7,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../db/database';
 import { showToast } from '../components/ui/Toast';
+import { logAction } from '../services/logService';
 
 // --- Imports Stock / Commercial ---
 import {
@@ -77,84 +78,123 @@ export function useExports() {
 
   return {
     // ============ PDF STOCK ============
-    exportInventoryPDF: (typeFilter = 'all') =>
-      exportInventoryPDF(inventory, typeFilter),
+    exportInventoryPDF: (typeFilter = 'all') => {
+      logAction('export', 'stock', `Export PDF de l'inventaire (Filtre: ${typeFilter})`);
+      return exportInventoryPDF(inventory, typeFilter);
+    },
 
     exportHistoryPDF: (filter = 'all') => {
       if (!checkAdmin()) return;
+      logAction('export', 'transactions', `Export PDF de l'historique des ventes (Filtre: ${filter})`);
       exportHistoryPDF(dailyRecords, filter);
     },
 
-    exportExpensesPDF: (timeFilter = 'all', payFilter = 'all') =>
-      exportExpensesPDF(expenses, timeFilter, payFilter),
+    exportExpensesPDF: (timeFilter = 'all', payFilter = 'all') => {
+      logAction('export', 'expenses', `Export PDF des dépenses (Période: ${timeFilter}, Mode: ${payFilter})`);
+      return exportExpensesPDF(expenses, timeFilter, payFilter);
+    },
 
-    exportIncomeHistoryPDF: (filter = 'all') =>
-      exportIncomeHistoryPDF(income, filter),
+    exportIncomeHistoryPDF: (filter = 'all') => {
+      logAction('export', 'income', `Export PDF des revenus additionnels (Filtre: ${filter})`);
+      return exportIncomeHistoryPDF(income, filter);
+    },
 
-    exportClientsPDF: () =>
-      exportClientsPDF(clients as any),
+    exportClientsPDF: () => {
+      logAction('export', 'clients', `Export PDF du fichier clients`);
+      return exportClientsPDF(clients as any);
+    },
 
-    exportProductionPDF: (filter = 'all') =>
-      exportProductionPDF(productions, filter),
+    exportProductionPDF: (filter = 'all') => {
+      logAction('export', 'production', `Export PDF du rapport de production (Filtre: ${filter})`);
+      return exportProductionPDF(productions, filter);
+    },
 
-    exportRawMaterialPDF: (filter = 'all') =>
-      exportRawMaterialPDF(rawMaterials, filter),
+    exportRawMaterialPDF: (filter = 'all') => {
+      logAction('export', 'rawMaterials', `Export PDF des matières premières (Filtre: ${filter})`);
+      return exportRawMaterialPDF(rawMaterials, filter);
+    },
 
     exportDailyReportPDF: (data: any) => {
       if (!checkAdmin()) return;
+      logAction('export', 'dashboard', `Export PDF du rapport journalier synthétique`);
       exportDailyReportPDF(data);
     },
 
-    generateInvoicePDF: (cartItems: any[], client?: any, mode?: 'sale' | 'quote') =>
-      generateInvoicePDF(cartItems, client, mode),
+    generateInvoicePDF: (cartItems: any[], client?: any, mode?: 'sale' | 'quote') => {
+      logAction('export', 'caisse', `Génération d'une facture/bon au format PDF`);
+      return generateInvoicePDF(cartItems, client, mode);
+    },
 
     // ============ EXCEL STOCK ============
-    exportInventoryXLSX: (typeFilter = 'all') =>
-      exportInventoryXLSX(inventory, typeFilter),
+    exportInventoryXLSX: (typeFilter = 'all') => {
+      logAction('export', 'stock', `Export Excel de l'inventaire (Filtre: ${typeFilter})`);
+      return exportInventoryXLSX(inventory, typeFilter);
+    },
 
     exportHistoryXLSX: (filter = 'all') => {
       if (!checkAdmin()) return;
+      logAction('export', 'transactions', `Export Excel de l'historique des ventes (Filtre: ${filter})`);
       exportHistoryXLSX(dailyRecords, filter);
     },
 
-    exportExpensesXLSX: (filter = 'all') =>
-      exportExpensesXLSX(expenses, filter),
+    exportExpensesXLSX: (filter = 'all') => {
+      logAction('export', 'expenses', `Export Excel des dépenses (Filtre: ${filter})`);
+      return exportExpensesXLSX(expenses, filter);
+    },
 
-    exportProductionXLSX: (filter = 'all') =>
-      exportProductionXLSX(productions, filter),
+    exportProductionXLSX: (filter = 'all') => {
+      logAction('export', 'production', `Export Excel du rapport de production (Filtre: ${filter})`);
+      return exportProductionXLSX(productions, filter);
+    },
 
-    exportRawMaterialXLSX: (filter = 'all') =>
-      exportRawMaterialXLSX(rawMaterials, filter),
+    exportRawMaterialXLSX: (filter = 'all') => {
+      logAction('export', 'rawMaterials', `Export Excel des matières premières (Filtre: ${filter})`);
+      return exportRawMaterialXLSX(rawMaterials, filter);
+    },
 
-    exportIncomeXLSX: (filter = 'all') =>
-      exportIncomeXLSX(income, filter),
+    exportIncomeXLSX: (filter = 'all') => {
+      logAction('export', 'income', `Export Excel des revenus additionnels (Filtre: ${filter})`);
+      return exportIncomeXLSX(income, filter);
+    },
 
     // ============ PDF RH ============
-    exportPersonnelPDF: (options?: any) =>
-      exportPersonnelPDF(employees, options),
+    exportPersonnelPDF: (options?: any) => {
+      logAction('export', 'rh', `Export PDF du registre du personnel`);
+      return exportPersonnelPDF(employees, options);
+    },
 
-    exportAttendancePDF: (filters: { year: number; month: number }) =>
-      exportAttendancePDF(employees, attendance, filters),
+    exportAttendancePDF: (filters: { year: number; month: number }) => {
+      logAction('export', 'rh', `Export PDF du pointage mensuel (${filters.month + 1}/${filters.year})`);
+      return exportAttendancePDF(employees, attendance, filters);
+    },
 
-    exportAttendanceTodayPDF: () =>
-      exportAttendanceTodayPDF(employees, attendance),
+    exportAttendanceTodayPDF: () => {
+      logAction('export', 'rh', `Export PDF de la feuille de présence du jour`);
+      return exportAttendanceTodayPDF(employees, attendance);
+    },
 
     exportPayrollPDF: (payrollData: any[]) => {
       if (!checkAdmin()) return;
+      logAction('export', 'salaires', `Export PDF de l'état récapitulatif des salaires`);
       exportPayrollPDF(payrollData);
     },
 
     exportRHHistoryPDF: (employee: any, year: number) => {
+      logAction('export', 'rh', `Export PDF de la fiche historique annuelle de ${employee.nom} ${employee.prenom} (${year})`, employee.id);
       const historyItems = buildRHHistory(employee, year, attendance, payrollExtras);
       exportRHHistoryPDF(employee, historyItems, year);
     },
 
     // ============ EXCEL RH ============
-    exportPersonnelXLSX: (filters?: any) =>
-      exportPersonnelXLSX(employees, filters),
+    exportPersonnelXLSX: (filters?: any) => {
+      logAction('export', 'rh', `Export Excel du registre du personnel`);
+      return exportPersonnelXLSX(employees, filters);
+    },
 
-    exportAttendanceXLSX: (filters: { year: number; month: number }) =>
-      exportAttendanceXLSX(employees, attendance, filters),
+    exportAttendanceXLSX: (filters: { year: number; month: number }) => {
+      logAction('export', 'rh', `Export Excel du pointage mensuel (${filters.month + 1}/${filters.year})`);
+      return exportAttendanceXLSX(employees, attendance, filters);
+    },
 
     // Données brutes disponibles pour les composants
     _data: {

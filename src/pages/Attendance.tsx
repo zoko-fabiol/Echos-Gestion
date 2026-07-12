@@ -10,6 +10,7 @@ import { SITES, MONTHS } from '../config/constants';
 import { showToast } from '../components/ui/Toast';
 import { useExports } from '../hooks/useExports';
 import { ExportButton } from '../components/ExportButton';
+import { logAction } from '../services/logService';
 
 export const Attendance: React.FC = () => {
   const { hasAccess } = useAuth();
@@ -111,6 +112,7 @@ export const Attendance: React.FC = () => {
     };
 
     await db.rhAppData.put({ key: 'rh_app_data', value });
+    await logAction('update', 'pointage', `Pointage de ${emp.nom} ${emp.prenom} modifié pour le ${day}/${selectedMonth + 1}/${selectedYear} : ${getStatusText(nextStatus)}`, emp.id);
   };
 
   const toggleSundayVisibility = async (day: number) => {
@@ -142,6 +144,7 @@ export const Attendance: React.FC = () => {
       visibleSundays: updatedVisibleSundays
     };
     await db.rhAppData.put({ key: 'rh_app_data', value });
+    await logAction('update', 'pointage', `Visibilité du dimanche ${day}/${selectedMonth + 1}/${selectedYear} modifiée`);
   };
 
   // --- RENDERING HELPERS ---

@@ -14,6 +14,7 @@ import { syncUp } from '../services/syncEngine';
 import { useExports } from '../hooks/useExports';
 import { ExportButton } from '../components/ExportButton';
 import { Modal } from '../components/ui/Modal';
+import { logAction } from '../services/logService';
 // --- INVENTORY STOCK PAGE ---
 
 
@@ -160,6 +161,7 @@ export const Stock: React.FC = () => {
 
     if (modalMode === 'edit') {
       await db.inventory.put(payload);
+      await logAction('update', 'stock', `Produit '${payload.name}' mis à jour (Stock: ${payload.stock}, Prix: ${payload.salePrice} F)`, payload.id);
       showToast('Produit mis à jour dans l\'inventaire.', 'success');
     } else {
       // Check duplicate
@@ -169,6 +171,7 @@ export const Stock: React.FC = () => {
         return;
       }
       await db.inventory.add(payload);
+      await logAction('create', 'stock', `Nouveau produit '${payload.name}' créé (Stock: ${payload.stock}, Prix: ${payload.salePrice} F)`, payload.id);
       showToast('Nouveau produit inséré.', 'success');
     }
 
@@ -182,7 +185,9 @@ export const Stock: React.FC = () => {
       return;
     }
     if (confirm('Voulez-vous supprimer ce produit de l\'inventaire ?')) {
+      const prod = products.find(p => p.id === id);
       await db.inventory.delete(id);
+      await logAction('delete', 'stock', `Produit '${prod?.name || id}' supprimé du stock`, id);
       showToast('Produit supprimé.', 'success');
       syncUp().catch(err => console.warn('POS background sync failed', err));
     }
@@ -195,6 +200,7 @@ export const Stock: React.FC = () => {
     }
     const newStock = Math.max(0, p.stock + delta);
     await db.inventory.update(p.id, { stock: newStock });
+    await logAction('update', 'stock', `Stock ajusté de ${delta > 0 ? '+' : ''}${delta} pour '${p.name}' (Nouveau stock: ${newStock})`, p.id);
     showToast(`Stock ajusté pour ${p.name} : ${newStock}`, 'success');
     syncUp().catch(err => console.warn('POS background sync failed', err));
   };
@@ -277,6 +283,7 @@ export const Stock: React.FC = () => {
         }
 
         if (addedCount > 0) {
+          await logAction('create', 'stock', `Importation Excel : ${addedCount} produit(s) importé(s)/mis à jour`);
           showToast(`${addedCount} produits importés/mis à jour.`, 'success');
           syncUp().catch(err => console.warn('POS background sync failed', err));
         }

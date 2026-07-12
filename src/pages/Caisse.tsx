@@ -10,6 +10,7 @@ import { showToast } from '../components/ui/Toast';
 import { COMPANY_KEY, LOGO_KEY, DEFAULT_COMPANY_INFO } from '../config/constants';
 import { generateInvoicePDF, generateDeliveryPDF } from '../services/pdfGenerator';
 import { syncUp } from '../services/syncEngine';
+import { logAction } from '../services/logService';
 
 interface CaisseProps {
   cart: (Product & { qty: number })[];
@@ -134,6 +135,7 @@ export const Caisse: React.FC<CaisseProps> = ({
         };
 
         await db.dailyRecords.put(record);
+        await logAction('create', 'caisse', `Vente directe enregistrée d'un montant de ${cartTotal.toLocaleString()} F (${activeItems.length} article(s))`, record.id);
         showToast('Vente enregistrée avec succès !', 'success');
 
         // Generate PDF Invoice
@@ -181,6 +183,7 @@ export const Caisse: React.FC<CaisseProps> = ({
         };
 
         await db.quotes.put(deliveryRecord);
+        await logAction('create', 'caisse', `Bon de livraison enregistré d'un montant de ${cartTotal.toLocaleString()} F pour ${deliveryRecord.clientName}`, deliveryRecord.id);
         showToast('Livraison enregistrée !', 'success');
 
         // Generate PDF Delivery Slip

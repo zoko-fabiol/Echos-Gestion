@@ -176,6 +176,17 @@ export interface UserAccount {
   permissions?: UserPermissions;
 }
 
+export interface ActionLog {
+  id: string; // "log_${timestamp}_${rand}"
+  timestamp: number;
+  userEmail: string;
+  userName?: string;
+  action: 'create' | 'update' | 'delete' | 'login' | 'export' | 'auth_fail';
+  tabId: string; // e.g. 'caisse', 'stock', 'rh', 'comptes', 'production'
+  details: string;
+  targetId?: string;
+}
+
 // --- DEXIE CLASS DEFINITION ---
 
 export class StockExpertDB extends Dexie {
@@ -191,10 +202,11 @@ export class StockExpertDB extends Dexie {
   appSettings!: Table<AppSetting, string>;
   rhAppData!: Table<RhAppData, string>;
   userAccounts!: Table<UserAccount, string>;
+  actionLogs!: Table<ActionLog, string>;
 
   constructor() {
     super('StockExpertDB');
-    this.version(2).stores({
+    this.version(3).stores({
       inventory: '&id, name, category, type',
       dailyRecords: '&id, date, clientName',
       expenses: '&id, date',
@@ -206,7 +218,8 @@ export class StockExpertDB extends Dexie {
       rawMaterials: '&id, date',
       appSettings: '&key, timestamp',
       rhAppData: '&key',
-      userAccounts: '&uid, email, role, status'
+      userAccounts: '&uid, email, role, status',
+      actionLogs: '&id, timestamp, userEmail, action, tabId'
     });
   }
 }

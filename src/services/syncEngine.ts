@@ -17,7 +17,8 @@ const COLLECTIONS = [
   'rawMaterials',
   'rhAppData',
   'userAccounts',
-  'appSettings'
+  'appSettings',
+  'actionLogs'
 ];
 
 let realtimeUnsubs: Unsubscribe[] = [];
