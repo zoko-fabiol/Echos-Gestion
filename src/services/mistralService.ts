@@ -1178,7 +1178,7 @@ export const getMistralTTSAudio = async (text: string): Promise<string> => {
     body: JSON.stringify({
       model: 'voxtral-mini-tts-latest',
       input: text,
-      voice_id: 'marie',
+      voice_id: 'fr_marie_neutral',
       response_format: 'mp3'
     })
   });
