@@ -1,5 +1,7 @@
 import { doc, getDoc, getDocs, collection, setDoc, updateDoc } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
+import { db } from '../db/database';
+import { syncUp } from './syncEngine';
 
 let cachedApiKey: string | null = null;
 
@@ -192,6 +194,171 @@ const tools = [
         properties: {}
       }
     }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "addProduct",
+      description: "Ajoute un nouveau produit (fini ou matière première) au catalogue de stock.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Le nom unique du produit (ex: Ciment de marque X)." },
+          category: { type: "string", description: "La catégorie (ex: Électricité, Maçonnerie, Blé, etc.)." },
+          type: { type: "string", enum: ["finished", "raw"], description: "Type de produit : 'finished' pour produit fini, 'raw' pour matière première." },
+          stock: { type: "number", description: "La quantité initiale en stock (par défaut 0)." },
+          salePrice: { type: "number", description: "Le prix de vente unitaire (FCFA)." },
+          saleUnit: { type: "string", description: "L'unité de vente (ex: sac, kg, unité, paquet)." },
+          purchasePrice: { type: "number", description: "Le prix d'achat unitaire moyen (FCFA)." },
+          purchaseUnit: { type: "string", description: "L'unité d'achat unitaire (ex: sac, tonne, kg)." }
+        },
+        required: ["name", "category", "type", "salePrice", "saleUnit", "purchasePrice", "purchaseUnit"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "addEmployee",
+      description: "Crée une nouvelle fiche employé dans le module de gestion RH.",
+      parameters: {
+        type: "object",
+        properties: {
+          prenom: { type: "string", description: "Le prénom de l'employé." },
+          nom: { type: "string", description: "Le nom de famille de l'employé." },
+          site: { type: "string", description: "Le site d'affectation (ex: Chantier A, Bureau)." },
+          type: { type: "string", enum: ["permanent", "temporaire"], description: "Statut contractuel : permanent ou temporaire." },
+          salaireBase: { type: "number", description: "Le salaire mensuel ou journalier de base (FCFA)." },
+          contact: { type: "string", description: "Le numéro de téléphone ou de contact de l'employé." }
+        },
+        required: ["prenom", "nom", "site", "type", "salaireBase", "contact"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "recordAttendance",
+      description: "Enregistre la présence ou l'absence d'un employé pour une date donnée.",
+      parameters: {
+        type: "object",
+        properties: {
+          employeeId: { type: "number", description: "L'identifiant numérique unique de l'employé." },
+          date: { type: "string", description: "La date au format YYYY-MM-DD (ex: 2026-03-14)." },
+          status: { type: "number", enum: [1, 2, 3], description: "Le statut de pointage : 1 pour Présent, 2 pour Absent, 3 pour Justifié." }
+        },
+        required: ["employeeId", "date", "status"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "addSale",
+      description: "Enregistre une nouvelle vente dans l'historique des transactions.",
+      parameters: {
+        type: "object",
+        properties: {
+          items: {
+            type: "array",
+            description: "La liste des articles vendus.",
+            items: {
+              type: "object",
+              properties: {
+                productId: { type: "number", description: "L'ID unique du produit." },
+                qty: { type: "number", description: "La quantité vendue." }
+              },
+              required: ["productId", "qty"]
+            }
+          }
+        },
+        required: ["items"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "addProduction",
+      description: "Enregistre un rapport de production journalier.",
+      parameters: {
+        type: "object",
+        properties: {
+          productName: { type: "string", description: "Le nom du produit fabriqué." },
+          rawQuantity: { type: "number", description: "La quantité de matière première utilisée (en kg)." },
+          finalQuantity: { type: "number", description: "La quantité de produit fini obtenue (en paquets/unités)." },
+          totalWeight: { type: "number", description: "Le poids total généré (en kg, optionnel)." },
+          description: { type: "string", description: "Commentaires ou détails de production." }
+        },
+        required: ["productName", "rawQuantity", "finalQuantity"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "addRawMaterial",
+      description: "Enregistre un mouvement ou stock de matière première (approvisionnement ou sortie).",
+      parameters: {
+        type: "object",
+        properties: {
+          productName: { type: "string", description: "Le nom de la matière première." },
+          arrivedQty: { type: "number", description: "Quantité reçue en sacs (0 si aucun)." },
+          outQty: { type: "number", description: "Quantité sortie pour production en sacs (0 si aucun)." },
+          description: { type: "string", description: "Notes de livraison ou d'utilisation." }
+        },
+        required: ["productName", "arrivedQty", "outQty"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "addClient",
+      description: "Enregistre un nouveau client dans la base de données.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Le nom complet ou raison sociale du client." },
+          phone: { type: "string", description: "Le numéro de téléphone principal du client." },
+          contact: { type: "string", description: "Nom du contact ou adresse." }
+        },
+        required: ["name"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "addSupplier",
+      description: "Enregistre un nouveau fournisseur dans la base de données.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Nom complet du fournisseur." },
+          phone: { type: "string", description: "Téléphone du fournisseur." },
+          contact: { type: "string", description: "Adresse ou contact du fournisseur." }
+        },
+        required: ["name"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "addIncome",
+      description: "Enregistre une rentrée d'argent ou revenu additionnel.",
+      parameters: {
+        type: "object",
+        properties: {
+          amount: { type: "number", description: "Le montant du revenu (FCFA)." },
+          source: { type: "string", description: "La source de la rentrée d'argent (ex: loyer, subvention, etc.)." },
+          receivedBy: { type: "string", description: "Le nom de la personne ayant encaissé la somme." },
+          description: { type: "string", description: "Notes explicatives." }
+        },
+        required: ["amount", "receivedBy", "source"]
+      }
+    }
   }
 ];
 
@@ -210,37 +377,23 @@ const executeTool = async (name: string, args: any) => {
   try {
     switch (name) {
       case "getInventory": {
-        const querySnapshot = await getDocs(collection(firestore, 'inventory'));
-        const items = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+        const items = await db.inventory.toArray();
         return { success: true, count: items.length, data: items };
       }
       
       case "getEmployees": {
-        const docRef = doc(firestore, 'rhAppData', 'current');
-        const docSnap = await getDoc(docRef);
-        let employees = [];
-        if (docSnap.exists() && docSnap.data().payload) {
-          const parsed = JSON.parse(docSnap.data().payload);
-          employees = parsed.employees || [];
-        }
+        const rawData = await db.rhAppData.get('rh_app_data');
+        const employees = rawData?.value?.employees || [];
         return { success: true, count: employees.length, data: employees };
       }
 
       case "getAttendance": {
         const { year, month } = args;
-        const dbMonthIndex = month - 1;
+        const dbMonthIndex = month - 1; // months in UI are 1-12, but inside data key we format year-month-day
         
-        const docRef = doc(firestore, 'rhAppData', 'current');
-        const docSnap = await getDoc(docRef);
-        
-        let employees = [];
-        let attendance: Record<string, number> = {};
-        
-        if (docSnap.exists() && docSnap.data().payload) {
-          const parsed = JSON.parse(docSnap.data().payload);
-          employees = parsed.employees || [];
-          attendance = parsed.attendance || {};
-        }
+        const rawData = await db.rhAppData.get('rh_app_data');
+        const employees = rawData?.value?.employees || [];
+        const attendance = rawData?.value?.attendance || {};
 
         const results: { employeeName: string; date: string; status: string }[] = [];
         
@@ -248,15 +401,15 @@ const executeTool = async (name: string, args: any) => {
           const parts = key.split('_');
           if (parts.length === 2) {
             const empId = Number(parts[0]);
-            const datePart = parts[1];
+            const datePart = parts[1]; // formats: YYYY-MM-DD or YYYY-M-D depending on input
             const dateParts = datePart.split('-');
             
             if (dateParts.length === 3) {
               const keyYear = Number(dateParts[0]);
-              const keyMonth = Number(dateParts[1]);
+              const keyMonth = Number(dateParts[1]); // Month in key is 1-indexed (e.g. 01 for Jan or 1 for Jan)
               const keyDay = Number(dateParts[2]);
 
-              if (keyYear === year && keyMonth === dbMonthIndex) {
+              if (keyYear === year && keyMonth === month) {
                 const emp = employees.find((e: any) => e.id === empId);
                 const employeeName = emp ? `${emp.prenom} ${emp.nom}` : `ID ${empId}`;
                 results.push({
@@ -279,39 +432,168 @@ const executeTool = async (name: string, args: any) => {
       }
 
       case "getExpenses": {
-        const querySnapshot = await getDocs(collection(firestore, 'expenses'));
-        const expenses = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+        const expenses = await db.expenses.toArray();
         return { success: true, count: expenses.length, data: expenses.slice(-20) };
       }
 
       case "updateProductPrice": {
         const { productId, newSalePrice } = args;
-        const docRef = doc(firestore, 'inventory', String(productId));
-        const docSnap = await getDoc(docRef);
+        const product = await db.inventory.get(Number(productId));
         
-        if (!docSnap.exists()) {
-          return { success: false, message: `Produit avec ID ${productId} introuvable dans Firebase.` };
+        if (!product) {
+          return { success: false, message: `Produit avec ID ${productId} introuvable en local.` };
         }
         
-        await updateDoc(docRef, { salePrice: newSalePrice });
-        return { success: true, message: `Le prix du produit "${docSnap.data().name || productId}" a été mis à jour à ${newSalePrice}€ dans Firebase.` };
+        product.salePrice = newSalePrice;
+        await db.inventory.put(product);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Le prix du produit "${product.name}" a été mis à jour à ${newSalePrice} FCFA.`, data: product };
       }
 
       case "addExpense": {
         const { amount, category, description } = args;
         const id = Date.now();
         const date = new Date().toISOString().split('T')[0];
-        const docRef = doc(firestore, 'expenses', String(id));
-        
-        await setDoc(docRef, {
+        const record = {
           id,
           date,
           amount,
           category,
           description,
-          type: 'general'
-        });
-        return { success: true, message: `Dépense de ${amount}€ enregistrée avec succès dans Firebase.` };
+          type: 'general' as const
+        };
+        await db.expenses.put(record);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Dépense de ${amount} FCFA enregistrée avec succès.`, data: record };
+      }
+
+      case "addProduct": {
+        const id = Date.now();
+        const newProduct = { id, ...args, stock: args.stock ?? 0 };
+        await db.inventory.put(newProduct);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Produit "${args.name}" ajouté avec succès à l'inventaire.`, data: newProduct };
+      }
+
+      case "addEmployee": {
+        const rawData = await db.rhAppData.get('rh_app_data');
+        const rhValue = rawData?.value || { employees: [], attendance: {}, payrollExtras: {}, visibleSundays: [] };
+        const newId = rhValue.employees.length > 0 ? Math.max(...rhValue.employees.map((e: any) => e.id)) + 1 : 1;
+        const newEmp = {
+          id: newId,
+          ...args,
+          statut: 'actif' as const,
+          dateRenvoi: null,
+          dateEmbauche: new Date().toISOString().split('T')[0]
+        };
+        rhValue.employees.push(newEmp);
+        await db.rhAppData.put({ key: 'rh_app_data', value: rhValue });
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Employé ${args.prenom} ${args.nom} créé avec succès.`, data: newEmp };
+      }
+
+      case "recordAttendance": {
+        const { employeeId, date, status } = args;
+        const rawData = await db.rhAppData.get('rh_app_data');
+        const rhValue = rawData?.value || { employees: [], attendance: {}, payrollExtras: {}, visibleSundays: [] };
+        const key = `${employeeId}_${date}`;
+        rhValue.attendance[key] = status;
+        await db.rhAppData.put({ key: 'rh_app_data', value: rhValue });
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Pointage enregistré pour l'employé ID ${employeeId} le ${date} avec le statut ${getStatusLabel(status)}.` };
+      }
+
+      case "addSale": {
+        const { items } = args;
+        const saleItems = [];
+        let total = 0;
+        let totalCost = 0;
+        for (const item of items) {
+          const product = await db.inventory.get(Number(item.productId));
+          if (!product) continue;
+          const cost = product.purchasePrice || 0;
+          const price = product.salePrice || 0;
+          const qty = Number(item.qty);
+          saleItems.push({
+            name: product.name,
+            qty,
+            price,
+            cost,
+            total: qty * price,
+            totalCost: qty * cost
+          });
+          total += qty * price;
+          totalCost += qty * cost;
+          
+          // Decrement stock
+          product.stock = Math.max(0, product.stock - qty);
+          await db.inventory.put(product);
+        }
+        const record = {
+          id: Date.now(),
+          type: 'sale' as const,
+          date: new Date().toISOString(),
+          items: saleItems,
+          total,
+          totalCost,
+          margin: total - totalCost
+        };
+        await db.dailyRecords.put(record);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Vente enregistrée avec succès. Total: ${total} FCFA.`, data: record };
+      }
+
+      case "addProduction": {
+        const record = {
+          id: Date.now(),
+          date: new Date().toISOString(),
+          ...args
+        };
+        await db.productions.put(record);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Rapport de production pour "${args.productName}" enregistré.`, data: record };
+      }
+
+      case "addRawMaterial": {
+        const latest = await db.rawMaterials.where('productName').equalsIgnoreCase(args.productName).reverse().first();
+        const currentStock = latest?.finalStock ?? 0;
+        const finalStock = currentStock + (args.arrivedQty ?? 0) - (args.outQty ?? 0);
+        const record = {
+          id: Date.now(),
+          date: new Date().toISOString(),
+          ...args,
+          finalStock
+        };
+        await db.rawMaterials.put(record);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Mouvement de matière première "${args.productName}" enregistré. Stock net: ${finalStock}.`, data: record };
+      }
+
+      case "addClient": {
+        const id = 'client_' + Date.now();
+        const record = { id, ...args };
+        await db.clients.put(record);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Client "${args.name}" enregistré avec succès.`, data: record };
+      }
+
+      case "addSupplier": {
+        const id = 'supplier_' + Date.now();
+        const record = { id, ...args };
+        await db.suppliers.put(record);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Fournisseur "${args.name}" enregistré avec succès.`, data: record };
+      }
+
+      case "addIncome": {
+        const record = {
+          id: Date.now(),
+          date: new Date().toISOString().split('T')[0],
+          ...args
+        };
+        await db.income.put(record);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Rentrée d'argent de ${args.amount} FCFA enregistrée avec succès.`, data: record };
       }
 
       case "navigateToTab": {
