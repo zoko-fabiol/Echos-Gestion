@@ -1183,7 +1183,8 @@ export const getMistralTTSAudio = async (text: string): Promise<string> => {
     })
   });
 
-  if (!response.ok) {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json') || !response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData?.message || `Erreur TTS Mistral (Status ${response.status})`);
   }
