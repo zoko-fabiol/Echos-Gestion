@@ -4,7 +4,10 @@ import { db, UserAccount } from '../db/database';
 import { useAuth, hashString } from '../context/AuthContext';
 import { 
   ShieldAlert, UserCheck, UserX, Plus, Edit2, 
-  Trash2, Save, X, Key, Mail, Shield 
+  Trash2, Save, X, Key, Mail, Shield, Eye,
+  LayoutDashboard, Users, CalendarDays, Coins, 
+  LayoutGrid, ShoppingCart, Package, CreditCard, 
+  Factory, Settings
 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -48,6 +51,7 @@ export const Comptes: React.FC = () => {
   // Granular Permissions Fields
   const [chatbotEnabled, setChatbotEnabled] = useState(true);
   const [tabPermissions, setTabPermissions] = useState<Record<string, { visible: boolean; add: boolean; edit: boolean; delete: boolean }>>({});
+  const [activePopover, setActivePopover] = useState<string | null>(null);
 
   const handleRoleChange = (newRole: 'admin' | 'user' | 'lecteur') => {
     setFormRole(newRole);
@@ -89,6 +93,7 @@ export const Comptes: React.FC = () => {
     setFormStatus('active');
     setFormPassword('');
     setChatbotEnabled(true);
+    setActivePopover(null);
     handleRoleChange('lecteur');
     setShowModal(true);
   };
@@ -106,6 +111,7 @@ export const Comptes: React.FC = () => {
     setFormStatus(u.status);
     setFormPassword('');
     setChatbotEnabled(u.permissions?.chatbotEnabled !== false);
+    setActivePopover(null);
 
     const initialPerms: Record<string, any> = {};
     Object.keys(TAB_LABELS).forEach(tab => {
@@ -409,113 +415,181 @@ export const Comptes: React.FC = () => {
                   </div>
 
                   <div>
-                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">Permissions d'accès aux onglets</h4>
-                    <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-slate-50 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
-                          <tr>
-                            <th className="p-3">Onglet</th>
-                            <th className="p-3 text-center">Voir</th>
-                            <th className="p-3 text-center">Ajouter</th>
-                            <th className="p-3 text-center">Modifier</th>
-                            <th className="p-3 text-center">Supprimer</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
-                          {[
-                            {
-                              title: 'Ressources Humaines',
-                              tabs: [
-                                { id: 'dashboard', label: 'RH Tableau de bord' },
-                                { id: 'employes', label: 'Effectifs' },
-                                { id: 'pointage', label: 'Présences / Pointage' },
-                                { id: 'salaires', label: 'Calcul des Salaires' }
-                              ]
-                            },
-                            {
-                              title: 'Stock & Ventes',
-                              tabs: [
-                                { id: 'catalogue', label: 'Catalogue' },
-                                { id: 'caisse', label: 'Caisse / POS' },
-                                { id: 'stock', label: 'Inventaire' },
-                                { id: 'transactions', label: 'Transactions & Dépenses' },
-                                { id: 'production', label: 'Suivi de Production' }
-                              ]
-                            },
-                            {
-                              title: 'Administration',
-                              tabs: [
-                                { id: 'comptes', label: 'Utilisateurs' },
-                                { id: 'settings', label: 'Paramètres' }
-                              ]
-                            }
-                          ].map(sect => (
-                            <React.Fragment key={sect.title}>
-                              {/* Section Header Row */}
-                              <tr className="bg-slate-50/70 dark:bg-slate-900/35 border-y border-slate-200/60 dark:border-slate-800/60">
-                                <td colSpan={5} className="px-3 py-1.5 font-extrabold text-brand dark:text-emerald-400 text-3xs uppercase tracking-wider">
-                                  {sect.title}
-                                </td>
-                              </tr>
-                              
-                              {sect.tabs.map(tab => {
-                                const p = tabPermissions[tab.id] || { visible: false, add: false, edit: false, delete: false };
-                                
-                                const updatePerm = (field: 'visible' | 'add' | 'edit' | 'delete', val: boolean) => {
-                                  setTabPermissions(prev => ({
-                                    ...prev,
-                                    [tab.id]: {
-                                      ...prev[tab.id],
-                                      [field]: val
-                                    }
-                                  }));
-                                };
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">Permissions d'accès aux onglets (Sélectionnez les onglets pour ajuster les droits)</h4>
+                    <div className="flex flex-col gap-5">
+                      {[
+                        {
+                          title: 'Ressources Humaines',
+                          tabs: [
+                            { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+                            { id: 'employes', label: 'Effectifs', icon: Users },
+                            { id: 'pointage', label: 'Présences', icon: CalendarDays },
+                            { id: 'salaires', label: 'Salaires', icon: Coins }
+                          ]
+                        },
+                        {
+                          title: 'Stock & Ventes',
+                          tabs: [
+                            { id: 'catalogue', label: 'Catalogue', icon: LayoutGrid },
+                            { id: 'caisse', label: 'Caisse / POS', icon: ShoppingCart },
+                            { id: 'stock', label: 'Inventaire', icon: Package },
+                            { id: 'transactions', label: 'Transactions', icon: CreditCard },
+                            { id: 'production', label: 'Production', icon: Factory }
+                          ]
+                        },
+                        {
+                          title: 'Administration',
+                          tabs: [
+                            { id: 'comptes', label: 'Utilisateurs', icon: ShieldAlert },
+                            { id: 'settings', label: 'Paramètres', icon: Settings }
+                          ]
+                        }
+                      ].map(sect => (
+                        <div key={sect.title} className="flex flex-col gap-2.5">
+                          <span className="text-4xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">
+                            {sect.title}
+                          </span>
+                          
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {sect.tabs.map(tab => {
+                              const p = tabPermissions[tab.id] || { visible: false, add: false, edit: false, delete: false };
+                              const isTabActive = p.visible || p.add || p.edit || p.delete;
+                              const TabIconComponent = tab.icon;
 
-                                return (
-                                  <tr key={tab.id} className="hover:bg-slate-50/40 dark:hover:bg-slate-850/20">
-                                    <td className="p-3 pl-5 font-semibold text-slate-700 dark:text-slate-300">{tab.label}</td>
-                                    <td className="p-3 text-center">
-                                      <input 
-                                        type="checkbox" 
-                                        checked={p.visible} 
-                                        onChange={e => updatePerm('visible', e.target.checked)}
-                                        className="w-4 h-4 rounded border-slate-350 dark:border-slate-700 text-brand focus:ring-brand accent-brand cursor-pointer transition-all"
-                                      />
-                                    </td>
-                                    <td className="p-3 text-center">
-                                      <input 
-                                        type="checkbox" 
-                                        checked={p.add} 
-                                        disabled={!p.visible}
-                                        onChange={e => updatePerm('add', e.target.checked)}
-                                        className="w-4 h-4 rounded border-slate-350 dark:border-slate-700 text-brand focus:ring-brand accent-brand cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                      />
-                                    </td>
-                                    <td className="p-3 text-center">
-                                      <input 
-                                        type="checkbox" 
-                                        checked={p.edit} 
-                                        disabled={!p.visible}
-                                        onChange={e => updatePerm('edit', e.target.checked)}
-                                        className="w-4 h-4 rounded border-slate-350 dark:border-slate-700 text-brand focus:ring-brand accent-brand cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                      />
-                                    </td>
-                                    <td className="p-3 text-center">
-                                      <input 
-                                        type="checkbox" 
-                                        checked={p.delete} 
-                                        disabled={!p.visible}
-                                        onChange={e => updatePerm('delete', e.target.checked)}
-                                        className="w-4 h-4 rounded border-slate-350 dark:border-slate-700 text-brand focus:ring-brand accent-brand cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                      />
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </React.Fragment>
-                          ))}
-                        </tbody>
-                      </table>
+                              const updatePerm = (field: 'visible' | 'add' | 'edit' | 'delete', val: boolean) => {
+                                setTabPermissions(prev => {
+                                  const currentTab = prev[tab.id] || { visible: false, add: false, edit: false, delete: false };
+                                  
+                                  // If visibility is disabled, automatically disable everything else
+                                  if (field === 'visible' && !val) {
+                                    return {
+                                      ...prev,
+                                      [tab.id]: { visible: false, add: false, edit: false, delete: false }
+                                    };
+                                  }
+                                  
+                                  // If enabling write/edit/delete, automatically make visible
+                                  const nextState = { ...currentTab, [field]: val };
+                                  if ((field === 'add' || field === 'edit' || field === 'delete') && val) {
+                                    nextState.visible = true;
+                                  }
+                                  
+                                  return {
+                                    ...prev,
+                                    [tab.id]: nextState
+                                  };
+                                });
+                              };
+
+                              return (
+                                <div key={tab.id} className="relative">
+                                  {/* Tab Button Card */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setActivePopover(activePopover === tab.id ? null : tab.id)}
+                                    className={`w-full p-3 rounded-2xl flex items-center gap-3 border text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                                      isTabActive
+                                        ? 'border-2 border-brand bg-brand/5 dark:bg-brand/10 text-brand dark:text-emerald-400 shadow-sm'
+                                        : 'border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-350 dark:hover:border-slate-700'
+                                    }`}
+                                  >
+                                    <div className={`p-2 rounded-xl flex items-center justify-center ${
+                                      isTabActive ? 'bg-brand text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-850 text-slate-400'
+                                    }`}>
+                                      <TabIconComponent className="w-5.5 h-5.5" />
+                                    </div>
+                                    <div className="flex flex-col text-left">
+                                      <span className={isTabActive ? 'text-slate-800 dark:text-white font-bold' : ''}>
+                                        {tab.label}
+                                      </span>
+                                      <span className="text-5xs text-slate-400 dark:text-slate-500 font-medium">
+                                        {isTabActive ? 'Configurer les droits' : 'Aucun droit'}
+                                      </span>
+                                    </div>
+                                  </button>
+
+                                  {/* Floating Action Popover Overlay */}
+                                  {activePopover === tab.id && (
+                                    <>
+                                      {/* Invisible background click-away helper */}
+                                      <div className="fixed inset-0 z-49" onClick={() => setActivePopover(null)} />
+                                      
+                                      <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-2xl shadow-xl z-50 flex items-center gap-2 animate-slide-up">
+                                        {/* Action: VOIR */}
+                                        <button
+                                          type="button"
+                                          title="Droit de Voir"
+                                          onClick={() => updatePerm('visible', !p.visible)}
+                                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
+                                            p.visible
+                                              ? 'bg-brand border-brand text-white shadow-sm'
+                                              : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100'
+                                          }`}
+                                        >
+                                          <Eye className="w-4.5 h-4.5" />
+                                        </button>
+
+                                        {/* Action: AJOUTER */}
+                                        <button
+                                          type="button"
+                                          title="Droit d'Ajouter"
+                                          onClick={() => updatePerm('add', !p.add)}
+                                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
+                                            p.add
+                                              ? 'bg-brand border-brand text-white shadow-sm'
+                                              : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed'
+                                          }`}
+                                        >
+                                          <Plus className="w-4.5 h-4.5" />
+                                        </button>
+
+                                        {/* Action: MODIFIER */}
+                                        <button
+                                          type="button"
+                                          title="Droit de Modifier"
+                                          onClick={() => updatePerm('edit', !p.edit)}
+                                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
+                                            p.edit
+                                              ? 'bg-brand border-brand text-white shadow-sm'
+                                              : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed'
+                                          }`}
+                                        >
+                                          <Edit2 className="w-4.5 h-4.5" />
+                                        </button>
+
+                                        {/* Action: SUPPRIMER */}
+                                        <button
+                                          type="button"
+                                          title="Droit de Supprimer"
+                                          onClick={() => updatePerm('delete', !p.delete)}
+                                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
+                                            p.delete
+                                              ? 'bg-brand border-brand text-white shadow-sm'
+                                              : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed'
+                                          }`}
+                                        >
+                                          <Trash2 className="w-4.5 h-4.5" />
+                                        </button>
+
+                                        <div className="w-px h-6 bg-slate-250 dark:bg-slate-800" />
+
+                                        {/* Done Checkmark Button */}
+                                        <button
+                                          type="button"
+                                          onClick={() => setActivePopover(null)}
+                                          className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-all"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
