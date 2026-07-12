@@ -482,7 +482,7 @@ export const Comptes: React.FC = () => {
                               };
 
                               return (
-                                <div key={tab.id} className="relative">
+                                <div key={tab.id} className="relative overflow-hidden rounded-2xl">
                                   {/* Tab Button Card */}
                                   <button
                                     type="button"
@@ -503,86 +503,81 @@ export const Comptes: React.FC = () => {
                                         {tab.label}
                                       </span>
                                       <span className="text-5xs text-slate-400 dark:text-slate-500 font-medium">
-                                        {isTabActive ? 'Configurer les droits' : 'Aucun droit'}
+                                        {isTabActive ? 'Configurer' : 'Aucun droit'}
                                       </span>
                                     </div>
                                   </button>
 
-                                  {/* Floating Action Popover Overlay */}
+                                  {/* Absolute Inset Popover Overlay (Fits exactly inside the card) */}
                                   {activePopover === tab.id && (
-                                    <>
-                                      {/* Invisible background click-away helper */}
-                                      <div className="fixed inset-0 z-49" onClick={() => setActivePopover(null)} />
-                                      
-                                      <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-2xl shadow-xl z-50 flex items-center gap-2 animate-slide-up">
-                                        {/* Action: VOIR */}
-                                        <button
-                                          type="button"
-                                          title="Droit de Voir"
-                                          onClick={() => updatePerm('visible', !p.visible)}
-                                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
-                                            p.visible
-                                              ? 'bg-brand border-brand text-white shadow-sm'
-                                              : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100'
-                                          }`}
-                                        >
-                                          <Eye className="w-4.5 h-4.5" />
-                                        </button>
+                                    <div className="absolute inset-0 bg-white/98 dark:bg-slate-900/98 z-10 flex items-center justify-center gap-1.5 px-2 animate-fade-scale">
+                                      {/* Action: VOIR */}
+                                      <button
+                                        type="button"
+                                        title="Voir"
+                                        onClick={() => updatePerm('visible', !p.visible)}
+                                        className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                                          p.visible
+                                            ? 'bg-brand border-brand text-white shadow-sm'
+                                            : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100'
+                                        }`}
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                      </button>
 
-                                        {/* Action: AJOUTER */}
-                                        <button
-                                          type="button"
-                                          title="Droit d'Ajouter"
-                                          onClick={() => updatePerm('add', !p.add)}
-                                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
-                                            p.add
-                                              ? 'bg-brand border-brand text-white shadow-sm'
-                                              : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed'
-                                          }`}
-                                        >
-                                          <Plus className="w-4.5 h-4.5" />
-                                        </button>
+                                      {/* Action: AJOUTER */}
+                                      <button
+                                        type="button"
+                                        title="Ajouter"
+                                        onClick={() => updatePerm('add', !p.add)}
+                                        className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                                          p.add
+                                            ? 'bg-brand border-brand text-white shadow-sm'
+                                            : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed'
+                                        }`}
+                                      >
+                                        <Plus className="w-4 h-4" />
+                                      </button>
 
-                                        {/* Action: MODIFIER */}
-                                        <button
-                                          type="button"
-                                          title="Droit de Modifier"
-                                          onClick={() => updatePerm('edit', !p.edit)}
-                                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
-                                            p.edit
-                                              ? 'bg-brand border-brand text-white shadow-sm'
-                                              : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed'
-                                          }`}
-                                        >
-                                          <Edit2 className="w-4.5 h-4.5" />
-                                        </button>
+                                      {/* Action: MODIFIER */}
+                                      <button
+                                        type="button"
+                                        title="Modifier"
+                                        onClick={() => updatePerm('edit', !p.edit)}
+                                        className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                                          p.edit
+                                            ? 'bg-brand border-brand text-white shadow-sm'
+                                            : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed'
+                                        }`}
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                      </button>
 
-                                        {/* Action: SUPPRIMER */}
-                                        <button
-                                          type="button"
-                                          title="Droit de Supprimer"
-                                          onClick={() => updatePerm('delete', !p.delete)}
-                                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
-                                            p.delete
-                                              ? 'bg-brand border-brand text-white shadow-sm'
-                                              : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed'
-                                          }`}
-                                        >
-                                          <Trash2 className="w-4.5 h-4.5" />
-                                        </button>
+                                      {/* Action: SUPPRIMER */}
+                                      <button
+                                        type="button"
+                                        title="Supprimer"
+                                        onClick={() => updatePerm('delete', !p.delete)}
+                                        className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                                          p.delete
+                                            ? 'bg-brand border-brand text-white shadow-sm'
+                                            : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed'
+                                        }`}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
 
-                                        <div className="w-px h-6 bg-slate-250 dark:bg-slate-800" />
+                                      <div className="w-px h-5 bg-slate-200 dark:bg-slate-800" />
 
-                                        {/* Done Checkmark Button */}
-                                        <button
-                                          type="button"
-                                          onClick={() => setActivePopover(null)}
-                                          className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-all"
-                                        >
-                                          <X className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    </>
+                                      {/* Done Close Button */}
+                                      <button
+                                        type="button"
+                                        onClick={() => setActivePopover(null)}
+                                        className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 flex items-center justify-center transition-all cursor-pointer"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                               );
