@@ -414,68 +414,106 @@ export const Comptes: React.FC = () => {
                       <table className="w-full text-xs text-left">
                         <thead className="bg-slate-50 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
                           <tr>
-                            <th className="p-2.5">Onglet</th>
-                            <th className="p-2.5 text-center">Voir</th>
-                            <th className="p-2.5 text-center">Ajouter</th>
-                            <th className="p-2.5 text-center">Modifier</th>
-                            <th className="p-2.5 text-center">Supprimer</th>
+                            <th className="p-3">Onglet</th>
+                            <th className="p-3 text-center">Voir</th>
+                            <th className="p-3 text-center">Ajouter</th>
+                            <th className="p-3 text-center">Modifier</th>
+                            <th className="p-3 text-center">Supprimer</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
-                          {Object.entries(TAB_LABELS).map(([tabId, label]) => {
-                            const p = tabPermissions[tabId] || { visible: false, add: false, edit: false, delete: false };
-                            
-                            const updatePerm = (field: 'visible' | 'add' | 'edit' | 'delete', val: boolean) => {
-                              setTabPermissions(prev => ({
-                                ...prev,
-                                [tabId]: {
-                                  ...prev[tabId],
-                                  [field]: val
-                                }
-                              }));
-                            };
-
-                            return (
-                              <tr key={tabId} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/40">
-                                <td className="p-2.5 font-medium text-slate-700 dark:text-slate-300">{label}</td>
-                                <td className="p-2.5 text-center">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={p.visible} 
-                                    onChange={e => updatePerm('visible', e.target.checked)}
-                                    className="rounded border-slate-300 dark:border-slate-700 text-brand focus:ring-brand"
-                                  />
-                                </td>
-                                <td className="p-2.5 text-center">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={p.add} 
-                                    disabled={!p.visible}
-                                    onChange={e => updatePerm('add', e.target.checked)}
-                                    className="rounded border-slate-300 dark:border-slate-700 text-brand focus:ring-brand disabled:opacity-30"
-                                  />
-                                </td>
-                                <td className="p-2.5 text-center">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={p.edit} 
-                                    disabled={!p.visible}
-                                    onChange={e => updatePerm('edit', e.target.checked)}
-                                    className="rounded border-slate-300 dark:border-slate-700 text-brand focus:ring-brand disabled:opacity-30"
-                                  />
-                                </td>
-                                <td className="p-2.5 text-center">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={p.delete} 
-                                    disabled={!p.visible}
-                                    onChange={e => updatePerm('delete', e.target.checked)}
-                                    className="rounded border-slate-300 dark:border-slate-700 text-brand focus:ring-brand disabled:opacity-30"
-                                  />
+                        <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
+                          {[
+                            {
+                              title: 'Ressources Humaines',
+                              tabs: [
+                                { id: 'dashboard', label: 'RH Tableau de bord' },
+                                { id: 'employes', label: 'Effectifs' },
+                                { id: 'pointage', label: 'Présences / Pointage' },
+                                { id: 'salaires', label: 'Calcul des Salaires' }
+                              ]
+                            },
+                            {
+                              title: 'Stock & Ventes',
+                              tabs: [
+                                { id: 'catalogue', label: 'Catalogue' },
+                                { id: 'caisse', label: 'Caisse / POS' },
+                                { id: 'stock', label: 'Inventaire' },
+                                { id: 'transactions', label: 'Transactions & Dépenses' },
+                                { id: 'production', label: 'Suivi de Production' }
+                              ]
+                            },
+                            {
+                              title: 'Administration',
+                              tabs: [
+                                { id: 'comptes', label: 'Utilisateurs' },
+                                { id: 'settings', label: 'Paramètres' }
+                              ]
+                            }
+                          ].map(sect => (
+                            <React.Fragment key={sect.title}>
+                              {/* Section Header Row */}
+                              <tr className="bg-slate-50/70 dark:bg-slate-900/35 border-y border-slate-200/60 dark:border-slate-800/60">
+                                <td colSpan={5} className="px-3 py-1.5 font-extrabold text-brand dark:text-emerald-400 text-3xs uppercase tracking-wider">
+                                  {sect.title}
                                 </td>
                               </tr>
-                            );
-                          })}
+                              
+                              {sect.tabs.map(tab => {
+                                const p = tabPermissions[tab.id] || { visible: false, add: false, edit: false, delete: false };
+                                
+                                const updatePerm = (field: 'visible' | 'add' | 'edit' | 'delete', val: boolean) => {
+                                  setTabPermissions(prev => ({
+                                    ...prev,
+                                    [tab.id]: {
+                                      ...prev[tab.id],
+                                      [field]: val
+                                    }
+                                  }));
+                                };
+
+                                return (
+                                  <tr key={tab.id} className="hover:bg-slate-50/40 dark:hover:bg-slate-850/20">
+                                    <td className="p-3 pl-5 font-semibold text-slate-700 dark:text-slate-300">{tab.label}</td>
+                                    <td className="p-3 text-center">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={p.visible} 
+                                        onChange={e => updatePerm('visible', e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-350 dark:border-slate-700 text-brand focus:ring-brand accent-brand cursor-pointer transition-all"
+                                      />
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={p.add} 
+                                        disabled={!p.visible}
+                                        onChange={e => updatePerm('add', e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-350 dark:border-slate-700 text-brand focus:ring-brand accent-brand cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                      />
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={p.edit} 
+                                        disabled={!p.visible}
+                                        onChange={e => updatePerm('edit', e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-350 dark:border-slate-700 text-brand focus:ring-brand accent-brand cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                      />
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={p.delete} 
+                                        disabled={!p.visible}
+                                        onChange={e => updatePerm('delete', e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-350 dark:border-slate-700 text-brand focus:ring-brand accent-brand cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                      />
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </React.Fragment>
+                          ))}
                         </tbody>
                       </table>
                     </div>
