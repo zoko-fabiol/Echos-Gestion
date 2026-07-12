@@ -4,6 +4,7 @@ import { askMistral, getMistralTTSAudio } from '../services/mistralService';
 import { useAuth } from '../context/AuthContext';
 import { AppLogo } from './AppLogo';
 import { isNativeApp, speakNative, stopSpeechNative } from '../utils/capacitorUtils';
+import { showToast } from './ui/Toast';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -148,8 +149,9 @@ export const AICopilotChat: React.FC = () => {
       const audio = new Audio(audioUrl);
       currentAudioRef.current = audio;
       await audio.play();
-    } catch (error) {
+    } catch (error: any) {
       console.warn("[IA Copilot] Mistral TTS Marie Voice failed. Falling back to local synthesizer.", error);
+      showToast(`Erreur TTS : ${error.message || error}`, 'error');
       
       // 2. Local Fallback (Capacitor / native or Web Speech API)
       if (isNativeApp()) {
