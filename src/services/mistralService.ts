@@ -1156,3 +1156,38 @@ Exemple de format propre :
     throw new Error(error?.message || "Erreur de connexion avec l'IA.");
   }
 };
+
+/**
+ * Génère de l'audio à partir d'un texte via l'API Mistral Voxtral (voix Marie)
+ * et retourne un Object URL pointant vers le Blob audio.
+ */
+export const getMistralTTSAudio = async (text: string): Promise<string> => {
+  if (!cachedApiKey) {
+    const initialized = await initializeMistral();
+    if (!initialized || !cachedApiKey) {
+      throw new Error("L'assistant IA n'est pas initialisé ou la clé API est absente.");
+    }
+  }
+
+  const response = await fetch('https://api.mistral.ai/v1/audio/speech', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${cachedApiKey}`
+    },
+    body: JSON.stringify({
+      model: 'voxtral-mini-tts-latest',
+      input: text,
+      voice_id: 'marie',
+      response_format: 'mp3'
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || `Erreur TTS Mistral (Status ${response.status})`);
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+};

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Sparkles, Mic, MicOff, Volume2, VolumeX, Paperclip, FileText, FileSpreadsheet } from 'lucide-react';
-import { askMistral } from '../services/mistralService';
+import { askMistral, getMistralTTSAudio } from '../services/mistralService';
 import { useAuth } from '../context/AuthContext';
 import { AppLogo } from './AppLogo';
 import { isNativeApp, speakNative, stopSpeechNative } from '../utils/capacitorUtils';
@@ -46,6 +46,7 @@ export const AICopilotChat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -61,6 +62,10 @@ export const AICopilotChat: React.FC = () => {
   // Clean speech on unmount or close
   useEffect(() => {
     return () => {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
       if (isNativeApp()) {
         stopSpeechNative();
       } else if (window.speechSynthesis) {
@@ -109,7 +114,7 @@ export const AICopilotChat: React.FC = () => {
   if (!isLoggedIn || !isOnline) return null;
 
   // Speak function
-  const speak = (text: string, force: boolean = false) => {
+  const speak = async (text: string, force: boolean = false) => {
     if (isMuted && !force) return;
     
     const cleanText = text
@@ -125,28 +130,50 @@ export const AICopilotChat: React.FC = () => {
 
     if (!cleanText) return;
 
+    // Pause and clean any currently playing audio
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     if (isNativeApp()) {
-      speakNative(cleanText);
-      return;
+      stopSpeechNative();
     }
 
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'fr-FR';
-    
-    const voices = window.speechSynthesis.getVoices();
-    const premiumFrenchVoice = 
-      voices.find(v => v.lang.startsWith('fr') && v.name.toLowerCase().includes('google')) ||
-      voices.find(v => v.lang.startsWith('fr') && v.name.toLowerCase().includes('natural')) ||
-      voices.find(v => v.lang.startsWith('fr') && !v.name.toLowerCase().includes('hortense')) ||
-      voices.find(v => v.lang.startsWith('fr'));
+    try {
+      // 1. Try Mistral Voxtral TTS
+      const audioUrl = await getMistralTTSAudio(cleanText);
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
+      await audio.play();
+    } catch (error) {
+      console.warn("[IA Copilot] Mistral TTS Marie Voice failed. Falling back to local synthesizer.", error);
+      
+      // 2. Local Fallback (Capacitor / native or Web Speech API)
+      if (isNativeApp()) {
+        speakNative(cleanText);
+        return;
+      }
 
-    if (premiumFrenchVoice) {
-      utterance.voice = premiumFrenchVoice;
+      if (!window.speechSynthesis) return;
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = 'fr-FR';
+      
+      const voices = window.speechSynthesis.getVoices();
+      const premiumFrenchVoice = 
+        voices.find(v => v.lang.startsWith('fr') && v.name.toLowerCase().includes('google')) ||
+        voices.find(v => v.lang.startsWith('fr') && v.name.toLowerCase().includes('natural')) ||
+        voices.find(v => v.lang.startsWith('fr') && !v.name.toLowerCase().includes('hortense')) ||
+        voices.find(v => v.lang.startsWith('fr'));
+
+      if (premiumFrenchVoice) {
+        utterance.voice = premiumFrenchVoice;
+      }
+
+      window.speechSynthesis.speak(utterance);
     }
-
-    window.speechSynthesis.speak(utterance);
   };
 
   const handleVoiceToggle = () => {
@@ -158,6 +185,10 @@ export const AICopilotChat: React.FC = () => {
     if (isListening) {
       recognitionRef.current.stop();
     } else {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
       if (isNativeApp()) {
         stopSpeechNative();
       } else if (window.speechSynthesis) {
