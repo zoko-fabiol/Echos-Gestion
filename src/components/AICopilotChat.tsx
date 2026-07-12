@@ -114,6 +114,23 @@ export const AICopilotChat: React.FC = () => {
 
   if (!isLoggedIn || !isOnline) return null;
 
+  // Clean markdown formatting from AI response text before display
+  const cleanMarkdown = (text: string): string =>
+    text
+      .replace(/\*\*(.+?)\*\*/g, '$1')   // gras → texte nu
+      .replace(/\*(.+?)\*/g, '$1')        // italique → texte nu
+      .replace(/^#{1,6}\s*/gm, '')        // titres ## → rien
+      .replace(/^\s*[-–—]{2,}\s*$/gm, '') // séparateurs --- → rien
+      .replace(/\|/g, ' ')                // colonnes de tableaux
+      .replace(/`([^`]+)`/g, '$1')        // code inline
+      .replace(/^\s*>\s*/gm, '')          // citations blockquote
+      .replace(/\[(.*?)\]\(.*?\)/g, '$1') // liens markdown [texte](url)
+      .replace(/^\s*[\*\-]\s/gm, '• ')   // listes → puces simples
+      .replace(/[ \t]+/g, ' ')            // espaces multiples
+      .replace(/\n{3,}/g, '\n\n')         // trop de lignes vides → max 2
+      .trim();
+
+
   // Speak function
   const speak = async (text: string, force: boolean = false) => {
     if (isMuted && !force) return;
@@ -479,7 +496,7 @@ export const AICopilotChat: React.FC = () => {
                       </div>
                     )}
                     
-                    <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    <p className="leading-relaxed whitespace-pre-wrap">{isAssistant ? cleanMarkdown(msg.content) : msg.content}</p>
 
                     {/* Interactive download card for generated PDFs or Excel sheets */}
                     {msg.downloadInfo && (
