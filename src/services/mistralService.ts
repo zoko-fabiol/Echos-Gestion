@@ -1120,7 +1120,8 @@ Exemple de format propre :
         tool_calls: message.tool_calls
       };
 
-      const followUpMessages = [
+      // --- Boucle multi-tours : jusqu'à 6 appels d'outils enchaînés ---
+      let loopMessages = [
         systemPrompt,
         ...history,
         { role: 'user' as const, content: userContent },
@@ -1128,26 +1129,66 @@ Exemple de format propre :
         ...toolMessages
       ];
 
-      const followUpResponse = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${cachedApiKey}`
-        },
-        body: JSON.stringify({
-          model: 'mistral-large-latest',
-          messages: followUpMessages
-        })
-      });
+      let finalContent = "L'action a été réalisée avec succès.";
 
-      if (!followUpResponse.ok) {
-        const followUpError = await followUpResponse.json().catch(() => ({}));
-        throw new Error(followUpError?.message || `Erreur lors du suivi de l'IA (Status ${followUpResponse.status})`);
+      for (let iteration = 0; iteration < 6; iteration++) {
+        const followUpResponse = await fetch('https://api.mistral.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${cachedApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'mistral-large-latest',
+            messages: loopMessages,
+            tools: tools,
+            tool_choice: 'auto'
+          })
+        });
+
+        if (!followUpResponse.ok) {
+          const followUpError = await followUpResponse.json().catch(() => ({}));
+          throw new Error(followUpError?.message || `Erreur lors du suivi de l'IA (Status ${followUpResponse.status})`);
+        }
+
+        const followUpData = await followUpResponse.json();
+        const followUpMessage = followUpData?.choices?.[0]?.message;
+
+        // Si le modèle veut encore appeler des outils, on les exécute et on continue
+        if (followUpMessage?.tool_calls && followUpMessage.tool_calls.length > 0) {
+          const nextToolMessages = [];
+          for (const toolCall of followUpMessage.tool_calls) {
+            const name = toolCall.function.name;
+            const args = JSON.parse(toolCall.function.arguments || '{}');
+            const toolResult = await executeTool(name, args);
+
+            if (name === "triggerExport" || name === "navigateToTab" || name === "generateCustomReportPDF" || name === "mergeBackupData") {
+              lastActionTriggered = { name, args };
+            }
+
+            nextToolMessages.push({
+              role: 'tool' as const,
+              name: name,
+              content: JSON.stringify(toolResult),
+              tool_call_id: toolCall.id
+            });
+          }
+
+          loopMessages = [
+            ...loopMessages,
+            { role: 'assistant' as const, content: followUpMessage.content || null, tool_calls: followUpMessage.tool_calls },
+            ...nextToolMessages
+          ];
+          // Continuer la boucle pour donner la réponse finale à Mistral
+          continue;
+        }
+
+        // Mistral a répondu sans appel d'outil : c'est la réponse finale
+        finalContent = followUpMessage?.content || finalContent;
+        break;
       }
 
-      const followUpData = await followUpResponse.json();
-      const content = followUpData?.choices?.[0]?.message?.content || "L'action a été réalisée avec succès.";
-      return { content, actionTriggered: lastActionTriggered };
+      return { content: finalContent, actionTriggered: lastActionTriggered };
     }
 
     return { content: message?.content || "Désolé, je n'ai pas pu formuler de réponse." };
