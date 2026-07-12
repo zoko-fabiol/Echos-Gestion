@@ -359,6 +359,242 @@ const tools = [
         required: ["amount", "receivedBy", "source"]
       }
     }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "updateProduct",
+      description: "Modifie les informations d'un produit du catalogue (inventaire).",
+      parameters: {
+        type: "object",
+        properties: {
+          productId: { type: "number", description: "L'identifiant numérique unique du produit à modifier." },
+          updates: {
+            type: "object",
+            description: "Les propriétés à modifier (ex: name, category, stock, salePrice, saleUnit, purchasePrice, purchaseUnit, type).",
+            properties: {
+              name: { type: "string" },
+              category: { type: "string" },
+              type: { type: "string", enum: ["finished", "raw"] },
+              stock: { type: "number" },
+              salePrice: { type: "number" },
+              saleUnit: { type: "string" },
+              purchasePrice: { type: "number" },
+              purchaseUnit: { type: "string" }
+            }
+          }
+        },
+        required: ["productId", "updates"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "deleteProduct",
+      description: "Supprime définitivement un produit du catalogue (inventaire) par son ID.",
+      parameters: {
+        type: "object",
+        properties: {
+          productId: { type: "number", description: "L'ID numérique unique du produit à supprimer." }
+        },
+        required: ["productId"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "updateEmployee",
+      description: "Met à jour la fiche d'un employé existant (salaire, poste, site, ou statut de renvoi/licenciement avec la date de renvoi).",
+      parameters: {
+        type: "object",
+        properties: {
+          employeeId: { type: "number", description: "L'identifiant numérique unique de l'employé." },
+          updates: {
+            type: "object",
+            properties: {
+              prenom: { type: "string" },
+              nom: { type: "string" },
+              site: { type: "string" },
+              type: { type: "string", enum: ["permanent", "temporaire"] },
+              salaireBase: { type: "number" },
+              contact: { type: "string" },
+              statut: { type: "string", enum: ["actif", "renvoye"] },
+              dateRenvoi: { type: "string", description: "Date de renvoi au format YYYY-MM-DD (requis si statut est 'renvoye', null sinon)." },
+              dateEmbauche: { type: "string" }
+            }
+          }
+        },
+        required: ["employeeId", "updates"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "deleteEmployee",
+      description: "Supprime définitivement la fiche d'un employé de la base de données par son ID.",
+      parameters: {
+        type: "object",
+        properties: {
+          employeeId: { type: "number", description: "L'ID numérique unique de l'employé à supprimer." }
+        },
+        required: ["employeeId"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "updateClient",
+      description: "Modifie les informations d'un client.",
+      parameters: {
+        type: "object",
+        properties: {
+          clientId: { type: "string", description: "L'ID texte du client (ex: client_171...)." },
+          updates: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              phone: { type: "string" },
+              contact: { type: "string" }
+            }
+          }
+        },
+        required: ["clientId", "updates"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "deleteClient",
+      description: "Supprime définitivement un client par son ID.",
+      parameters: {
+        type: "object",
+        properties: {
+          clientId: { type: "string", description: "L'ID texte du client." }
+        },
+        required: ["clientId"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "updateSupplier",
+      description: "Modifie les informations d'un fournisseur.",
+      parameters: {
+        type: "object",
+        properties: {
+          supplierId: { type: "string", description: "L'ID texte du fournisseur." },
+          updates: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              phone: { type: "string" },
+              contact: { type: "string" }
+            }
+          }
+        },
+        required: ["supplierId", "updates"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "deleteSupplier",
+      description: "Supprime un fournisseur par son ID.",
+      parameters: {
+        type: "object",
+        properties: {
+          supplierId: { type: "string", description: "L'ID texte du fournisseur." }
+        },
+        required: ["supplierId"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "updateExpense",
+      description: "Modifie les détails d'une dépense enregistrée.",
+      parameters: {
+        type: "object",
+        properties: {
+          expenseId: { type: "number", description: "L'ID numérique unique de la dépense." },
+          updates: {
+            type: "object",
+            properties: {
+              amount: { type: "number" },
+              category: { type: "string" },
+              description: { type: "string" },
+              paidAmount: { type: "number" },
+              remainingAmount: { type: "number" }
+            }
+          }
+        },
+        required: ["expenseId", "updates"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "deleteExpense",
+      description: "Supprime définitivement une dépense de l'historique.",
+      parameters: {
+        type: "object",
+        properties: {
+          expenseId: { type: "number", description: "L'ID numérique unique de la dépense." }
+        },
+        required: ["expenseId"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "deleteSale",
+      description: "Annule ou supprime définitivement une vente de l'historique par son ID.",
+      parameters: {
+        type: "object",
+        properties: {
+          saleId: { type: "number", description: "L'ID de la transaction de vente." }
+        },
+        required: ["saleId"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "deleteProduction",
+      description: "Supprime un enregistrement de production.",
+      parameters: {
+        type: "object",
+        properties: {
+          productionId: { type: "number", description: "L'ID unique de l'enregistrement de production." }
+        },
+        required: ["productionId"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "deleteRawMaterial",
+      description: "Supprime un enregistrement de mouvement de matière première.",
+      parameters: {
+        type: "object",
+        properties: {
+          rawMaterialId: { type: "number", description: "L'ID de la ligne de matière première." }
+        },
+        required: ["rawMaterialId"]
+      }
+    }
   }
 ];
 
@@ -594,6 +830,134 @@ const executeTool = async (name: string, args: any) => {
         await db.income.put(record);
         try { await syncUp(); } catch {}
         return { success: true, message: `Rentrée d'argent de ${args.amount} FCFA enregistrée avec succès.`, data: record };
+      }
+
+      case "updateProduct": {
+        const { productId, updates } = args;
+        const product = await db.inventory.get(Number(productId));
+        if (!product) return { success: false, message: `Produit ID ${productId} introuvable.` };
+        const updated = { ...product, ...updates };
+        await db.inventory.put(updated);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Produit "${updated.name}" mis à jour avec succès.`, data: updated };
+      }
+
+      case "deleteProduct": {
+        const { productId } = args;
+        const exists = await db.inventory.get(Number(productId));
+        if (!exists) return { success: false, message: `Produit ID ${productId} introuvable.` };
+        await db.inventory.delete(Number(productId));
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Produit "${exists.name}" supprimé définitivement.` };
+      }
+
+      case "updateEmployee": {
+        const { employeeId, updates } = args;
+        const rawData = await db.rhAppData.get('rh_app_data');
+        const rhValue = rawData?.value || { employees: [], attendance: {}, payrollExtras: {}, visibleSundays: [] };
+        const empIndex = rhValue.employees.findIndex((e: any) => e.id === Number(employeeId));
+        if (empIndex === -1) return { success: false, message: `Employé ID ${employeeId} introuvable.` };
+        const updated = { ...rhValue.employees[empIndex], ...updates };
+        rhValue.employees[empIndex] = updated;
+        await db.rhAppData.put({ key: 'rh_app_data', value: rhValue });
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Employé ${updated.prenom} ${updated.nom} mis à jour avec succès.`, data: updated };
+      }
+
+      case "deleteEmployee": {
+        const { employeeId } = args;
+        const rawData = await db.rhAppData.get('rh_app_data');
+        const rhValue = rawData?.value || { employees: [], attendance: {}, payrollExtras: {}, visibleSundays: [] };
+        const emp = rhValue.employees.find((e: any) => e.id === Number(employeeId));
+        if (!emp) return { success: false, message: `Employé ID ${employeeId} introuvable.` };
+        rhValue.employees = rhValue.employees.filter((e: any) => e.id !== Number(employeeId));
+        await db.rhAppData.put({ key: 'rh_app_data', value: rhValue });
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Employé ${emp.prenom} ${emp.nom} supprimé définitivement.` };
+      }
+
+      case "updateClient": {
+        const { clientId, updates } = args;
+        const client = await db.clients.get(String(clientId));
+        if (!client) return { success: false, message: `Client ID ${clientId} introuvable.` };
+        const updated = { ...client, ...updates };
+        await db.clients.put(updated);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Client "${updated.name}" mis à jour.`, data: updated };
+      }
+
+      case "deleteClient": {
+        const { clientId } = args;
+        const client = await db.clients.get(String(clientId));
+        if (!client) return { success: false, message: `Client ID ${clientId} introuvable.` };
+        await db.clients.delete(String(clientId));
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Client "${client.name}" supprimé définitivement.` };
+      }
+
+      case "updateSupplier": {
+        const { supplierId, updates } = args;
+        const supplier = await db.suppliers.get(String(supplierId));
+        if (!supplier) return { success: false, message: `Fournisseur ID ${supplierId} introuvable.` };
+        const updated = { ...supplier, ...updates };
+        await db.suppliers.put(updated);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Fournisseur "${updated.name}" mis à jour.`, data: updated };
+      }
+
+      case "deleteSupplier": {
+        const { supplierId } = args;
+        const supplier = await db.suppliers.get(String(supplierId));
+        if (!supplier) return { success: false, message: `Fournisseur ID ${supplierId} introuvable.` };
+        await db.suppliers.delete(String(supplierId));
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Fournisseur "${supplier.name}" supprimé définitivement.` };
+      }
+
+      case "updateExpense": {
+        const { expenseId, updates } = args;
+        const expense = await db.expenses.get(Number(expenseId));
+        if (!expense) return { success: false, message: `Dépense ID ${expenseId} introuvable.` };
+        const updated = { ...expense, ...updates };
+        await db.expenses.put(updated);
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Dépense mise à jour.`, data: updated };
+      }
+
+      case "deleteExpense": {
+        const { expenseId } = args;
+        const expense = await db.expenses.get(Number(expenseId));
+        if (!expense) return { success: false, message: `Dépense ID ${expenseId} introuvable.` };
+        await db.expenses.delete(Number(expenseId));
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Dépense supprimée.` };
+      }
+
+      case "deleteSale": {
+        const { saleId } = args;
+        const sale = await db.dailyRecords.get(Number(saleId));
+        if (!sale) return { success: false, message: `Vente ID ${saleId} introuvable.` };
+        await db.dailyRecords.delete(Number(saleId));
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Vente annulée et supprimée de l'historique.` };
+      }
+
+      case "deleteProduction": {
+        const { productionId } = args;
+        const prod = await db.productions.get(Number(productionId));
+        if (!prod) return { success: false, message: `Rapport de production ID ${productionId} introuvable.` };
+        await db.productions.delete(Number(productionId));
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Rapport de production de "${prod.productName}" supprimé.` };
+      }
+
+      case "deleteRawMaterial": {
+        const { rawMaterialId } = args;
+        const raw = await db.rawMaterials.get(Number(rawMaterialId));
+        if (!raw) return { success: false, message: `Ligne de matière première ID ${rawMaterialId} introuvable.` };
+        await db.rawMaterials.delete(Number(rawMaterialId));
+        try { await syncUp(); } catch {}
+        return { success: true, message: `Mouvement de matière première "${raw.productName}" supprimé.` };
       }
 
       case "navigateToTab": {
