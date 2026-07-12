@@ -312,15 +312,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (docSnap.exists()) {
             userProfile = docSnap.data() as UserAccount;
           } else {
-            // Auto-create initial profile if not found (admin if first user, or user)
+            // Auto-create initial profile if not found
             const usersSnap = await getDocs(collection(firestore, 'userAccounts'));
             const isFirstUser = usersSnap.empty;
+            const domain = email.split('@')[1] || '';
+            const isTrustedDomain = ALLOWED_EMAIL_DOMAINS.some(d => domain.toLowerCase() === d.toLowerCase()) || email.includes('echosdechezmoi');
+
+            // Comptes echosdechezmoi.com non enregistrés → lecteur par défaut
+            // Premier utilisateur → admin, sinon 'user' pour les domaines inconnus
+            const defaultRole: UserAccount['role'] = isFirstUser ? 'admin' : (isTrustedDomain ? 'lecteur' : 'user');
 
             userProfile = {
               uid: user.uid,
               email: user.email || email,
               displayName: user.displayName || email.split('@')[0],
-              role: isFirstUser ? 'admin' : 'user',
+              role: defaultRole,
               status: 'active',
               createdAt: Date.now(),
               updatedAt: Date.now()
