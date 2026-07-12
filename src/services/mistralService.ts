@@ -1184,9 +1184,18 @@ export const getMistralTTSAudio = async (text: string): Promise<string> => {
   });
 
   const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('application/json') || !response.ok) {
+  if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData?.message || `Erreur TTS Mistral (Status ${response.status})`);
+  }
+
+  if (contentType.includes('application/json')) {
+    const jsonData = await response.json();
+    if (jsonData && jsonData.audio_data) {
+      return `data:audio/mp3;base64,${jsonData.audio_data}`;
+    } else {
+      throw new Error(jsonData?.message || "Aucune donnée audio retournée dans le JSON de Mistral TTS.");
+    }
   }
 
   const blob = await response.blob();
