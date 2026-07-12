@@ -510,7 +510,7 @@ export const Comptes: React.FC = () => {
 
                                   {/* Absolute Inset Popover Overlay (Fits exactly inside the card) */}
                                   {activePopover === tab.id && (
-                                    <div className="absolute inset-0 bg-white/98 dark:bg-slate-900/98 z-10 flex items-center justify-center gap-1.5 px-2 animate-fade-scale">
+                                    <div className="absolute inset-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md z-10 flex items-center justify-center gap-1.5 px-2 animate-fade-scale">
                                       {/* Action: VOIR */}
                                       <button
                                         type="button"
