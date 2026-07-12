@@ -24,12 +24,58 @@ export const Comptes: React.FC = () => {
 
   const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null);
 
+  const TAB_LABELS: Record<string, string> = {
+    dashboard: 'RH Tableau de bord',
+    employes: 'Effectifs',
+    pointage: 'Présences / Pointage',
+    salaires: 'Calcul des Salaires',
+    catalogue: 'Catalogue',
+    caisse: 'Caisse / POS',
+    stock: 'Inventaire',
+    transactions: 'Transactions & Dépenses',
+    production: 'Suivi de Production',
+    comptes: 'Utilisateurs',
+    settings: 'Paramètres'
+  };
+
   // Form Fields
   const [formEmail, setFormEmail] = useState('');
   const [formName, setFormName] = useState('');
   const [formRole, setFormRole] = useState<'admin' | 'user' | 'lecteur'>('lecteur');
   const [formStatus, setFormStatus] = useState<'active' | 'inactive'>('active');
   const [formPassword, setFormPassword] = useState(''); // Used to pre-set offline hash
+
+  // Granular Permissions Fields
+  const [chatbotEnabled, setChatbotEnabled] = useState(true);
+  const [tabPermissions, setTabPermissions] = useState<Record<string, { visible: boolean; add: boolean; edit: boolean; delete: boolean }>>({});
+
+  const handleRoleChange = (newRole: 'admin' | 'user' | 'lecteur') => {
+    setFormRole(newRole);
+    const initialPerms: Record<string, any> = {};
+    Object.keys(TAB_LABELS).forEach(tab => {
+      const isComptesOrSalaires = tab === 'comptes' || tab === 'settings'; // Restrict accounts and settings by default
+      const isSensitiveRh = tab === 'salaires';
+      
+      if (newRole === 'admin') {
+        initialPerms[tab] = { visible: true, add: true, edit: true, delete: true };
+      } else if (newRole === 'user') {
+        initialPerms[tab] = {
+          visible: !isComptesOrSalaires && !isSensitiveRh,
+          add: !isComptesOrSalaires && !isSensitiveRh,
+          edit: !isComptesOrSalaires && !isSensitiveRh,
+          delete: false
+        };
+      } else { // lecteur
+        initialPerms[tab] = {
+          visible: !isComptesOrSalaires && !isSensitiveRh,
+          add: false,
+          edit: false,
+          delete: false
+        };
+      }
+    });
+    setTabPermissions(initialPerms);
+  };
 
   const openAddModal = () => {
     if (currentUser?.role !== 'admin') {
@@ -40,9 +86,10 @@ export const Comptes: React.FC = () => {
     setSelectedUser(null);
     setFormEmail('');
     setFormName('');
-    setFormRole('lecteur');
     setFormStatus('active');
     setFormPassword('');
+    setChatbotEnabled(true);
+    handleRoleChange('lecteur');
     setShowModal(true);
   };
 
@@ -58,6 +105,36 @@ export const Comptes: React.FC = () => {
     setFormRole(u.role);
     setFormStatus(u.status);
     setFormPassword('');
+    setChatbotEnabled(u.permissions?.chatbotEnabled !== false);
+
+    const initialPerms: Record<string, any> = {};
+    Object.keys(TAB_LABELS).forEach(tab => {
+      if (u.permissions?.tabs?.[tab]) {
+        initialPerms[tab] = { ...u.permissions.tabs[tab] };
+      } else {
+        const isComptesOrSalaires = tab === 'comptes' || tab === 'settings';
+        const isSensitiveRh = tab === 'salaires';
+        
+        if (u.role === 'admin') {
+          initialPerms[tab] = { visible: true, add: true, edit: true, delete: true };
+        } else if (u.role === 'user') {
+          initialPerms[tab] = {
+            visible: !isComptesOrSalaires && !isSensitiveRh,
+            add: !isComptesOrSalaires && !isSensitiveRh,
+            edit: !isComptesOrSalaires && !isSensitiveRh,
+            delete: false
+          };
+        } else { // lecteur
+          initialPerms[tab] = {
+            visible: !isComptesOrSalaires && !isSensitiveRh,
+            add: false,
+            edit: false,
+            delete: false
+          };
+        }
+      }
+    });
+    setTabPermissions(initialPerms);
     setShowModal(true);
   };
 
@@ -84,7 +161,11 @@ export const Comptes: React.FC = () => {
       status: formStatus,
       hashedToken,
       createdAt: selectedUser?.createdAt || Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      permissions: formRole === 'admin' ? undefined : {
+        chatbotEnabled,
+        tabs: tabPermissions
+      }
     };
 
     // Save in Dexie
@@ -252,9 +333,9 @@ export const Comptes: React.FC = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         title={modalMode === 'create' ? 'Créer un Compte' : 'Modifier le Compte'}
-        size="md"
+        size={formRole !== 'admin' ? 'lg' : 'md'}
       >
-            <form onSubmit={saveUser} className="p-6 flex flex-col gap-4">
+            <form onSubmit={saveUser} className="p-6 flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
               
               <div>
                 <label className="form-label">Adresse E-mail de connexion <span className="text-red-500">*</span></label>
@@ -288,7 +369,7 @@ export const Comptes: React.FC = () => {
                   <label className="form-label">Rôle / Accès</label>
                   <select
                     value={formRole}
-                    onChange={e => setFormRole(e.target.value as any)}
+                    onChange={e => handleRoleChange(e.target.value as any)}
                     className="form-input font-semibold"
                   >
                     <option value="lecteur">Lecteur seul (Pas d'édits)</option>
@@ -308,6 +389,99 @@ export const Comptes: React.FC = () => {
                   </select>
                 </div>
               </div>
+
+              {formRole !== 'admin' && (
+                <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">Assistant IA (Copilote Chatbot)</h4>
+                      <p className="text-4xs text-slate-400">Autoriser l'utilisateur à voir et interagir avec l'IA</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={chatbotEnabled} 
+                        onChange={e => setChatbotEnabled(e.target.checked)}
+                        className="sr-only peer" 
+                      />
+                      <div className="w-10 h-5 bg-slate-200 dark:bg-slate-750 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
+                    </label>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">Permissions d'accès aux onglets</h4>
+                    <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-50 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+                          <tr>
+                            <th className="p-2.5">Onglet</th>
+                            <th className="p-2.5 text-center">Voir</th>
+                            <th className="p-2.5 text-center">Ajouter</th>
+                            <th className="p-2.5 text-center">Modifier</th>
+                            <th className="p-2.5 text-center">Supprimer</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+                          {Object.entries(TAB_LABELS).map(([tabId, label]) => {
+                            const p = tabPermissions[tabId] || { visible: false, add: false, edit: false, delete: false };
+                            
+                            const updatePerm = (field: 'visible' | 'add' | 'edit' | 'delete', val: boolean) => {
+                              setTabPermissions(prev => ({
+                                ...prev,
+                                [tabId]: {
+                                  ...prev[tabId],
+                                  [field]: val
+                                }
+                              }));
+                            };
+
+                            return (
+                              <tr key={tabId} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/40">
+                                <td className="p-2.5 font-medium text-slate-700 dark:text-slate-300">{label}</td>
+                                <td className="p-2.5 text-center">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={p.visible} 
+                                    onChange={e => updatePerm('visible', e.target.checked)}
+                                    className="rounded border-slate-300 dark:border-slate-700 text-brand focus:ring-brand"
+                                  />
+                                </td>
+                                <td className="p-2.5 text-center">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={p.add} 
+                                    disabled={!p.visible}
+                                    onChange={e => updatePerm('add', e.target.checked)}
+                                    className="rounded border-slate-300 dark:border-slate-700 text-brand focus:ring-brand disabled:opacity-30"
+                                  />
+                                </td>
+                                <td className="p-2.5 text-center">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={p.edit} 
+                                    disabled={!p.visible}
+                                    onChange={e => updatePerm('edit', e.target.checked)}
+                                    className="rounded border-slate-300 dark:border-slate-700 text-brand focus:ring-brand disabled:opacity-30"
+                                  />
+                                </td>
+                                <td className="p-2.5 text-center">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={p.delete} 
+                                    disabled={!p.visible}
+                                    onChange={e => updatePerm('delete', e.target.checked)}
+                                    className="rounded border-slate-300 dark:border-slate-700 text-brand focus:ring-brand disabled:opacity-30"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="form-label">Mot de passe pour connexion hors ligne (Optionnel)</label>

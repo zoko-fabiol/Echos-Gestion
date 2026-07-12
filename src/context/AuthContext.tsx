@@ -653,6 +653,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return false;
     if (currentUser.role === 'admin') return true;
 
+    // 1. Check custom granular permissions if defined
+    if (currentUser.permissions?.tabs?.[tabId]) {
+      const p = currentUser.permissions.tabs[tabId];
+      if (action === 'view') return p.visible;
+      if (action === 'add') return p.add;
+      if (action === 'edit') return p.edit;
+      if (action === 'delete') return p.delete;
+    }
+
+    // 2. Fallback to role-based defaults
     const isComptesOrSalaires = tabId === 'comptes' || tabId === 'salaires';
     
     if (currentUser.role === 'lecteur') {

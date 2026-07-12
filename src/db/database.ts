@@ -151,6 +151,18 @@ export interface RhAppData {
   value: RhAppDataPayload;
 }
 
+export interface TabPermission {
+  visible: boolean;
+  add: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+
+export interface UserPermissions {
+  chatbotEnabled: boolean;
+  tabs?: Record<string, TabPermission>;
+}
+
 export interface UserAccount {
   uid: string;
   email: string;
@@ -161,6 +173,7 @@ export interface UserAccount {
   lastEmailVerificationCheck?: number;
   createdAt?: number;
   updatedAt?: number;
+  permissions?: UserPermissions;
 }
 
 // --- DEXIE CLASS DEFINITION ---

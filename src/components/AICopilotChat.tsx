@@ -20,7 +20,7 @@ interface Message {
 }
 
 export const AICopilotChat: React.FC = () => {
-  const { isLoggedIn, isOnline } = useAuth();
+  const { isLoggedIn, isOnline, currentUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -112,7 +112,8 @@ export const AICopilotChat: React.FC = () => {
     }
   }, []);
 
-  if (!isLoggedIn || !isOnline) return null;
+  const isChatbotEnabled = currentUser?.permissions?.chatbotEnabled !== false;
+  if (!isLoggedIn || !isOnline || !isChatbotEnabled) return null;
 
   // Clean markdown formatting from AI response text before display
   const cleanMarkdown = (text: string): string =>
