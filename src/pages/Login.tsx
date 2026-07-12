@@ -5,11 +5,13 @@ import { showToast } from '../components/ui/Toast';
 import { AppLogo } from '../components/AppLogo';
 
 export const Login: React.FC = () => {
-  const { loginWithEmail, isOnline } = useAuth();
+  const { loginWithEmail, loginWithMicrosoft, isOnline } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isElectron = window.location.protocol === 'file:' || navigator.userAgent.toLowerCase().includes('electron');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +29,20 @@ export const Login: React.FC = () => {
       console.error('[Login] Classical login error:', err);
       setError(err.message || 'Une erreur est survenue lors de la connexion.');
       showToast(err.message || 'Erreur de connexion', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMicrosoftLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await loginWithMicrosoft();
+    } catch (err: any) {
+      console.error('[Login] Microsoft login error:', err);
+      setError(err.message || 'Une erreur est survenue lors de la connexion Microsoft.');
+      showToast(err.message || 'Erreur de connexion Microsoft', 'error');
     } finally {
       setLoading(false);
     }
@@ -127,6 +143,36 @@ export const Login: React.FC = () => {
               </button>
             </div>
           </form>
+
+          {!isElectron && (
+            <>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-800"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-slate-900/50 px-3 text-slate-500 font-bold tracking-wider">
+                    Ou
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleMicrosoftLogin}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-slate-100 text-slate-950 font-bold rounded-xl shadow-sm transition-all active:scale-[0.99] text-sm"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0H11V11H0V0Z" fill="#F25022"/>
+                  <path d="M12 0H23V11H12V0Z" fill="#7FBA00"/>
+                  <path d="M0 12H11V23H0V12Z" fill="#00A4EF"/>
+                  <path d="M12 12H23V23H12V12Z" fill="#FFB900"/>
+                </svg>
+                Se connecter avec Microsoft
+              </button>
+            </>
+          )}
 
         </div>
       </div>
