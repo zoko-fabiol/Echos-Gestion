@@ -135,8 +135,13 @@ export const AICopilotChat: React.FC = () => {
   // Speak function
   const speak = async (text: string, force: boolean = false) => {
     if (isMuted && !force) return;
-    
-    const cleanText = text
+
+    // Strip code blocks before reading: skip ```lang ... ``` and `inline code`
+    const textWithoutCode = text
+      .replace(/```[\s\S]*?```/g, " ") // Blocs de code multi-lignes
+      .replace(/`[^`\n]+`/g, " ");     // Code inline entre backticks
+
+    const cleanText = textWithoutCode
       .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "") // Emojis
       .replace(/\*\*/g, "") // Gras
       .replace(/\*/g, "")  // Italique

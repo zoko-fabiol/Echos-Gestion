@@ -595,6 +595,22 @@ const tools = [
         required: ["rawMaterialId"]
       }
     }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "getActivityLogs",
+      description: "Récupère l'historique des actions effectuées sur la plateforme pour une date donnée (par défaut aujourd'hui). Permet de savoir qui a fait quoi, quand, et dans quelle section. Appelle cet outil quand l'utilisateur pose une question sur les activités du jour, les actions récentes, ce qui a été modifié ou saisi, ou par qui.",
+      parameters: {
+        type: "object",
+        properties: {
+          date: {
+            type: "string",
+            description: "Optionnel. La date ciblée au format YYYY-MM-DD (ex: 2026-07-12). Par défaut c'est aujourd'hui."
+          }
+        }
+      }
+    }
   }
 ];
 
@@ -670,6 +686,50 @@ const executeTool = async (name: string, args: any) => {
       case "getExpenses": {
         const expenses = await db.expenses.toArray();
         return { success: true, count: expenses.length, data: expenses.slice(-20) };
+      }
+
+      case "getActivityLogs": {
+        // Determine the target date (default = today)
+        const today = new Date();
+        const targetDateStr = args?.date || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const [y, m, d] = targetDateStr.split('-').map(Number);
+        const startOfDay = new Date(y, m - 1, d).getTime();
+        const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
+
+        const allLogs = await db.actionLogs.toArray();
+        const dayLogs = allLogs
+          .filter(log => log.timestamp >= startOfDay && log.timestamp < endOfDay)
+          .sort((a, b) => b.timestamp - a.timestamp);
+
+        // Translate action keys to French labels
+        const actionLabels: Record<string, string> = {
+          create: 'Ajout',
+          update: 'Modification',
+          delete: 'Suppression',
+          export: 'Export',
+          login: 'Connexion'
+        };
+        const sectionLabels: Record<string, string> = {
+          caisse: 'Caisse/POS', stock: 'Inventaire', pointage: 'Présences',
+          comptes: 'Utilisateurs', transactions: 'Transactions', production: 'Production',
+          salaires: 'Salaires', employes: 'Effectifs', dashboard: 'Tableau de bord', settings: 'Paramètres'
+        };
+
+        const formatted = dayLogs.map(log => ({
+          action: actionLabels[log.action] || log.action,
+          section: sectionLabels[log.tabId] || log.tabId,
+          utilisateur: log.userName || log.userEmail,
+          email: log.userEmail,
+          heure: new Date(log.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          details: log.details
+        }));
+
+        return {
+          success: true,
+          date: targetDateStr,
+          totalActions: formatted.length,
+          data: formatted
+        };
       }
 
       case "updateProductPrice": {
@@ -1041,6 +1101,7 @@ RÈGLE ABSOLUE N°2 — APPEL D'OUTIL OBLIGATOIRE AVANT TOUTE RÉPONSE SUR LES D
 - Question sur les clients → appelle TOUJOURS 'getClients' avant de répondre.
 - Question sur les fournisseurs → appelle TOUJOURS 'getSuppliers' avant de répondre.
 - Question sur les absences/pointage → appelle TOUJOURS 'getAttendance' avant de répondre.
+- Question sur les activités du jour / ce qui a été fait / qui a fait quoi / actions récentes → appelle TOUJOURS 'getActivityLogs' avant de répondre.
 - N'utilise JAMAIS des données que tu "crois connaître" : les données changent, appelle toujours l'outil.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
