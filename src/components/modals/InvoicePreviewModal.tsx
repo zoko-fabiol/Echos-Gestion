@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal } from '../ui/Modal';
-import { FileText, Download, Save, X, Printer, Check, Building2, User, Phone, Calendar, Hash } from 'lucide-react';
+import { FileText, Download, Save, X, Calendar } from 'lucide-react';
 import { generateInvoicePDF } from '../../utils/exportPDF';
 import { showToast } from '../ui/Toast';
 import { AppLogo } from '../AppLogo';
@@ -113,53 +112,53 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-md flex flex-col overflow-hidden animate-fade-scale">
+    <div className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm flex flex-col overflow-hidden animate-fade-scale">
       
       {/* ========================================================= */}
       {/* 1. TOP HEADER TOOLBAR CONTROL                             */}
       {/* ========================================================= */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-md z-10 flex-shrink-0">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3.5 flex items-center justify-between z-10 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-brand/10 text-brand rounded-2xl flex items-center justify-center border border-brand/20">
+          <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center">
             <FileText className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white capitalize">
-              Éditeur de {docTitle}
+            <h2 className="text-lg font-bold text-slate-800 dark:text-white capitalize">
+              éditeur de {docTitle}
             </h2>
-            <p className="text-3xs sm:text-2xs text-slate-400 font-medium">
-              Générez un document PDF professionnel pour l'impression ou le partage
+            <p className="text-xs text-slate-500 font-medium">
+              Générez un document PDF professionnel
             </p>
           </div>
         </div>
 
         {/* Action Header Buttons */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {onSave && (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
-            >
-              <Save className="w-4 h-4 text-brand" />
-              <span className="hidden sm:inline">{saving ? 'Enregistrement...' : 'Sauvegarder'}</span>
-            </button>
-          )}
-
+        <div className="flex items-center gap-3">
           <button
             onClick={handleDownloadPDF}
-            className="px-4 py-2 bg-brand hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-brand/20 active:scale-95"
+            className="px-4 py-2 bg-[#14522D] hover:bg-[#0e3b20] text-white rounded-lg text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95"
           >
             <Download className="w-4 h-4" />
             <span>Télécharger {docTitle} PDF</span>
           </button>
 
+          {onSave && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-2xs disabled:opacity-50"
+            >
+              <Save className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+              <span>{saving ? 'Enregistrement...' : 'Sauvegarder'}</span>
+            </button>
+          )}
+
           <button
             onClick={onClose}
-            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-xl transition-all cursor-pointer"
-            title="Fermer la fenêtre"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
+            title="Fermer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
       </header>
@@ -167,138 +166,136 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       {/* ========================================================= */}
       {/* 2. WORKSPACE AREA WITH A4 PAPER SHEET                    */}
       {/* ========================================================= */}
-      <main className="flex-1 bg-slate-200 dark:bg-slate-950 p-4 sm:p-8 overflow-y-auto flex justify-center">
+      <main className="flex-1 bg-[#f0f2f5] dark:bg-slate-950 p-4 sm:p-8 overflow-y-auto flex justify-center">
         
         {/* A4 Paper Container */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl w-full max-w-[820px] min-h-[980px] p-6 sm:p-12 flex flex-col justify-between font-sans text-slate-800 dark:text-slate-100 relative">
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm w-full max-w-[850px] min-h-[920px] p-8 sm:p-12 flex flex-col justify-between font-sans text-slate-800 dark:text-slate-100 relative">
           
-          <div className="space-y-8">
+          <div className="space-y-6">
             
             {/* Header Document (Company & Metadata) */}
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-200 dark:border-slate-800 pb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
               
               {/* Left: Company Identity */}
-              <div className="flex items-center gap-4">
-                <AppLogo size={56} className="shadow-sm" />
+              <div className="space-y-3">
+                <AppLogo size={48} className="shadow-none border-none p-0" />
                 <div>
-                  <h1 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  <h1 className="text-lg font-bold text-slate-900 dark:text-white">
                     Echos De Chez Moi
                   </h1>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    Épicerie & Distribution Générale
-                  </p>
-                  <span className="text-2xs text-slate-400 block mt-1">
+                  <p className="text-xs text-slate-500 font-medium">
                     contact@echosdechezmoi.com
-                  </span>
+                  </p>
                 </div>
               </div>
 
               {/* Right: Document Title & Metadata */}
               <div className="flex flex-col sm:items-end w-full sm:w-auto gap-2">
-                <span className="text-2xl font-black text-brand tracking-wider font-sans uppercase">
+                <span className="text-3xl font-black text-[#14522D] tracking-wider uppercase">
                   {uppercaseDocTitle}
                 </span>
 
-                <div className="flex items-center gap-2 text-xs bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-slate-400 font-bold uppercase text-3xs">Réf :</span>
-                  <input
-                    type="text"
-                    value={docRef}
-                    onChange={e => setDocRef(e.target.value)}
-                    className="font-bold text-slate-800 dark:text-white bg-transparent border-b border-transparent focus:border-brand focus:outline-none w-28 text-right font-mono"
-                    placeholder="FAC-000000"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 text-xs bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-slate-400 font-bold uppercase text-3xs">Date :</span>
+                <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-1">
+                  <span>Date:</span>
                   <input
                     type="date"
                     value={docDate}
                     onChange={e => setDocDate(e.target.value)}
-                    className="font-semibold text-slate-700 dark:text-slate-200 bg-transparent border-b border-transparent focus:border-brand focus:outline-none text-right font-mono cursor-pointer"
+                    className="font-semibold text-slate-800 dark:text-slate-200 bg-transparent border-b border-slate-200 focus:border-[#14522D] focus:outline-none text-right cursor-pointer"
+                  />
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 font-semibold">
+                  <span className="font-bold text-slate-800 dark:text-white">Réf:</span>
+                  <input
+                    type="text"
+                    value={docRef}
+                    onChange={e => setDocRef(e.target.value)}
+                    className="font-bold text-slate-900 dark:text-white bg-transparent border-b border-slate-200 focus:border-[#14522D] focus:outline-none w-28 text-right font-mono"
+                    placeholder="FAC-849898"
                   />
                 </div>
               </div>
             </div>
 
             {/* Client Details Framed Box */}
-            <div className="bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 shadow-sm">
-              <div className="flex-1 space-y-1">
-                <span className="text-3xs font-extrabold text-brand uppercase tracking-wider block">
-                  Détails du Client / Destinataire
-                </span>
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-brand flex-shrink-0" />
+            <div className="bg-[#eef8f2] dark:bg-emerald-950/20 border border-[#d2efe0] dark:border-emerald-900/30 rounded-xl p-4 my-6 space-y-3">
+              <span className="text-xs font-extrabold text-[#14522D] tracking-wider uppercase block">
+                DÉTAILS DU CLIENT
+              </span>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-slate-500 font-semibold block mb-1">
+                    Nom / Entité:
+                  </label>
                   <input
                     type="text"
                     value={clientName}
                     onChange={e => setClientName(e.target.value)}
-                    className="w-full text-sm font-bold bg-transparent border-b border-slate-300/50 dark:border-slate-700 focus:border-brand focus:outline-none py-0.5 text-slate-900 dark:text-white"
-                    placeholder="Nom du Client / Entité..."
+                    className="w-full bg-white dark:bg-slate-900 border-none rounded-full px-4 py-1.5 text-xs text-slate-800 dark:text-white shadow-2xs focus:outline-none focus:ring-1 focus:ring-[#14522D]"
+                    placeholder="Nom du Client"
                   />
                 </div>
-              </div>
 
-              <div className="w-full sm:w-64 space-y-1">
-                <span className="text-3xs font-extrabold text-slate-400 uppercase tracking-wider block">
-                  Contact / Téléphone
-                </span>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <div>
+                  <label className="text-xs text-slate-500 font-semibold block mb-1">
+                    Contact / Tél:
+                  </label>
                   <input
                     type="text"
                     value={clientPhone}
                     onChange={e => setClientPhone(e.target.value)}
-                    className="w-full text-sm font-semibold bg-transparent border-b border-slate-300/50 dark:border-slate-700 focus:border-brand focus:outline-none py-0.5 text-slate-800 dark:text-white"
-                    placeholder="+225 00 00 00 00"
+                    className="w-full bg-white dark:bg-slate-900 border-none rounded-full px-4 py-1.5 text-xs text-slate-800 dark:text-white shadow-2xs focus:outline-none focus:ring-1 focus:ring-[#14522D]"
+                    placeholder="Tél du Client"
                   />
                 </div>
               </div>
             </div>
 
             {/* Items Table */}
-            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="overflow-x-auto pt-2">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-extrabold uppercase tracking-wider">
-                    <th className="p-3 text-center w-12">#</th>
-                    <th className="p-3 text-left">Description</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-[#14522D] font-bold uppercase tracking-wider text-[11px]">
+                    <th className="py-3 px-2 text-center w-10">#</th>
+                    <th className="py-3 px-2 text-left">DESCRIPTION</th>
                     {data.type === 'delivery' ? (
                       <>
-                        <th className="p-3 text-center w-24">Stock Init.</th>
-                        <th className="p-3 text-center w-24">Qté Livrée</th>
-                        <th className="p-3 text-center w-24">Stock Fin.</th>
-                        <th className="p-3 text-right w-28">Prix U.</th>
+                        <th className="py-3 px-2 text-center w-24">STOCK INITIAL</th>
+                        <th className="py-3 px-2 text-center w-24">QTÉ LIVRÉE</th>
+                        <th className="py-3 px-2 text-center w-24">STOCK FINAL</th>
+                        <th className="py-3 px-2 text-right w-24">PRIX U.</th>
                       </>
                     ) : (
                       <>
-                        <th className="p-3 text-center w-24">Qté</th>
-                        <th className="p-3 text-right w-28">Prix U.</th>
-                        <th className="p-3 text-right w-32">Total</th>
+                        <th className="py-3 px-2 text-center w-24">QTÉ</th>
+                        <th className="py-3 px-2 text-right w-24">PRIX U.</th>
+                        <th className="py-3 px-2 text-right w-28">TOTAL</th>
                       </>
                     )}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {data.items.map((item, idx) => {
                     const rowTotal = item.qty * item.price;
                     return (
-                      <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/80 last:border-b-0 hover:bg-slate-50/50 dark:hover:bg-slate-950/30 transition-colors">
-                        <td className="p-3 text-center font-mono font-bold text-slate-400">{idx + 1}</td>
-                        <td className="p-3 font-semibold text-slate-800 dark:text-slate-100">{item.name}</td>
+                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/30 transition-colors">
+                        <td className="py-3 px-2 text-center font-mono text-slate-400">{idx + 1}</td>
+                        <td className="py-3 px-2 font-medium text-slate-800 dark:text-slate-100">{item.name}</td>
                         {data.type === 'delivery' ? (
                           <>
-                            <td className="p-3 text-center font-mono text-slate-500">{item.initialStock ?? '-'}</td>
-                            <td className="p-3 text-center font-extrabold text-brand">{item.qty} {item.unit || item.saleUnit || ''}</td>
-                            <td className="p-3 text-center font-mono text-slate-500">{item.finalStock ?? '-'}</td>
-                            <td className="p-3 text-right font-mono font-medium">{item.price.toLocaleString()} F</td>
+                            <td className="py-3 px-2 text-center font-mono text-slate-500">{item.initialStock ?? '-'}</td>
+                            <td className="py-3 px-2 text-center font-bold text-[#14522D]">{item.qty} {item.unit || item.saleUnit || 'Unit'}</td>
+                            <td className="py-3 px-2 text-center font-mono text-slate-500">{item.finalStock ?? '-'}</td>
+                            <td className="py-3 px-2 text-right font-mono">{item.price}</td>
                           </>
                         ) : (
                           <>
-                            <td className="p-3 text-center font-bold">{item.qty} {item.saleUnit || ''}</td>
-                            <td className="p-3 text-right font-mono font-medium">{item.price.toLocaleString()} F</td>
-                            <td className="p-3 text-right font-mono font-bold text-brand">{rowTotal.toLocaleString()} F</td>
+                            <td className="py-3 px-2 text-center font-medium text-slate-700 dark:text-slate-300">{item.qty} {item.saleUnit || 'Unit'}</td>
+                            <td className="py-3 px-2 text-right font-mono text-slate-700 dark:text-slate-300">{item.price}</td>
+                            <td className="py-3 px-2 text-right font-mono font-bold text-slate-800 dark:text-slate-100">{rowTotal}</td>
                           </>
                         )}
                       </tr>
@@ -309,15 +306,15 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
             </div>
 
             {/* Totals Block */}
-            <div className="flex justify-end pt-2">
-              <div className="w-full sm:w-72 bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-2xl space-y-2 shadow-sm">
-                <div className="flex justify-between items-center text-xs text-slate-500 font-semibold">
-                  <span>Total HT :</span>
-                  <span className="font-mono text-slate-700 dark:text-slate-300">{data.total.toLocaleString()} FCFA</span>
+            <div className="flex justify-end pt-4">
+              <div className="w-full sm:w-64 space-y-2 text-xs">
+                <div className="flex justify-between items-center text-slate-500 font-medium">
+                  <span>Total HT</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200">{data.total} FCFA</span>
                 </div>
-                <div className="border-t border-emerald-500/20 pt-2 flex justify-between items-center text-sm font-extrabold">
-                  <span className="text-slate-800 dark:text-white uppercase tracking-wider text-2xs">Net à Payer :</span>
-                  <span className="text-brand text-lg font-mono">{data.total.toLocaleString()} FCFA</span>
+                <div className="pt-2 flex justify-between items-center text-sm font-extrabold text-[#14522D]">
+                  <span className="font-bold text-slate-900 dark:text-white">Net é Payer</span>
+                  <span className="font-mono text-base">{data.total} FCFA</span>
                 </div>
               </div>
             </div>
@@ -325,22 +322,22 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           </div>
 
           {/* Footer & Signature Section */}
-          <div className="pt-12 space-y-10 border-t border-slate-100 dark:border-slate-800/80 mt-12">
+          <div className="pt-12 space-y-8">
             
             <div className="flex justify-between items-end px-4">
-              <div className="text-center space-y-12">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Signature Client</span>
-                <div className="w-48 border-b-2 border-dashed border-slate-300 dark:border-slate-700" />
+              <div className="text-center space-y-10">
+                <span className="text-xs font-semibold text-slate-400 block">Signature Client</span>
+                <div className="w-56 border-b border-dashed border-slate-300 dark:border-slate-700" />
               </div>
 
-              <div className="text-center space-y-12">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Signature Vendeur</span>
-                <div className="w-48 border-b-2 border-dashed border-slate-300 dark:border-slate-700" />
+              <div className="text-center space-y-10">
+                <span className="text-xs font-semibold text-slate-400 block">Signature Vendeur</span>
+                <div className="w-56 border-b border-dashed border-slate-300 dark:border-slate-700" />
               </div>
             </div>
 
-            <div className="text-center text-3xs font-semibold text-slate-400 uppercase tracking-widest pt-4">
-              Echos De Chez Moi © 2026 — Document généré le {new Date().toLocaleDateString('fr-FR')}
+            <div className="text-center text-[11px] text-slate-400 pt-4">
+              Echos De Chez Moi © 2026
             </div>
 
           </div>
