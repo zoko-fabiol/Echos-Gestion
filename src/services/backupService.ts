@@ -99,14 +99,22 @@ export async function restoreFromJSON(file: File): Promise<RestoreResult> {
           if (appSettings.length > 0) { await db.appSettings.clear(); await db.appSettings.bulkPut(appSettings); }
           if (data.userAccounts) { await db.userAccounts.clear(); await db.userAccounts.bulkPut(data.userAccounts); }
           
-          // Restore RH app data with wage preservation
+          // Restore RH app data from the imported backup JSON
           if (data.rhAppData && data.rhAppData.length > 0) {
             await db.rhAppData.clear();
-            if (existingRH) {
-              await db.rhAppData.put(existingRH);
-            } else {
-              await db.rhAppData.bulkPut(data.rhAppData);
-            }
+            await db.rhAppData.bulkPut(data.rhAppData);
+          } else if (data.employees || data.attendance) {
+            const payload = {
+              key: 'rh_app_data',
+              value: {
+                employees: data.employees || [],
+                attendance: data.attendance || {},
+                payrollExtras: data.payrollExtras || {},
+                visibleSundays: data.visibleSundays || []
+              }
+            };
+            await db.rhAppData.clear();
+            await db.rhAppData.put(payload);
           }
         });
 

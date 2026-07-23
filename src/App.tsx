@@ -154,64 +154,67 @@ const AppContent: React.FC = () => {
             db.suppliers, db.quotes, db.income, db.productions, 
             db.rawMaterials
           ], async () => {
-            const mergeTable = async (tableName: string, items: any[]) => {
+            const syncTable = async (tableName: string, items: any[]) => {
               if (!items || !Array.isArray(items)) return;
               const table = (db as any)[tableName];
-              const existingIds = new Set((await table.toArray()).map((x: any) => x.id));
-              const missingItems = items.filter(item => !existingIds.has(item.id));
-              if (missingItems.length > 0) {
-                await table.bulkPut(missingItems);
-                mergedCount += missingItems.length;
+              const backupIds = new Set(items.map((x: any) => x.id));
+              const localItems = await table.toArray();
+              
+              // Remove local items not in imported backup JSON
+              const toRemove = localItems.filter((x: any) => !backupIds.has(x.id)).map((x: any) => x.id);
+              if (toRemove.length > 0) {
+                await table.bulkDelete(toRemove);
               }
+              
+              // Put/update items from imported backup JSON
+              if (items.length > 0) {
+                await table.bulkPut(items);
+              }
+              mergedCount += items.length;
             };
 
-            await mergeTable('inventory', backup.inventory);
-            await mergeTable('dailyRecords', backup.dailyRecords);
-            await mergeTable('expenses', backup.expenses);
-            await mergeTable('clients', backup.clients);
-            await mergeTable('suppliers', backup.suppliers);
-            await mergeTable('quotes', backup.quotes);
-            await mergeTable('income', backup.income);
-            await mergeTable('productions', backup.productions);
-            await mergeTable('rawMaterials', backup.rawMaterials);
+            if (backup.inventory) await syncTable('inventory', backup.inventory);
+            if (backup.dailyRecords) await syncTable('dailyRecords', backup.dailyRecords);
+            if (backup.expenses) await syncTable('expenses', backup.expenses);
+            if (backup.clients) await syncTable('clients', backup.clients);
+            if (backup.suppliers) await syncTable('suppliers', backup.suppliers);
+            if (backup.quotes) await syncTable('quotes', backup.quotes);
+            if (backup.income) await syncTable('income', backup.income);
+            if (backup.productions) await syncTable('productions', backup.productions);
+            if (backup.rawMaterials) await syncTable('rawMaterials', backup.rawMaterials);
           });
 
-          // Merge RH Data
+          // Smart RH Mirror Sync: restore exact employee list from backup JSON
           const localRH = await db.rhAppData.get('rh_app_data');
           const backupRHList = backup.rhAppData || [];
           const backupRH = backupRHList.find((x: any) => x.key === 'rh_app_data')?.value || 
                            (backup.employees || backup.attendance ? backup : null);
 
           if (backupRH) {
-            const currentRHValue = localRH?.value || { employees: [], attendance: {}, payrollExtras: {}, visibleSundays: [] };
-            
-            const existingEmpIds = new Set(currentRHValue.employees.map((e: any) => e.id));
             const backupEmployees = backupRH.employees || [];
-            const missingEmployees = backupEmployees.filter((e: any) => !existingEmpIds.has(e.id));
-            
-            const mergedAttendance = { ...currentRHValue.attendance, ...(backupRH.attendance || {}) };
-            const mergedPayrollExtras = { ...currentRHValue.payrollExtras, ...(backupRH.payrollExtras || {}) };
-            
+            const mergedAttendance = { ...(localRH?.value?.attendance || {}), ...(backupRH.attendance || {}) };
+            const mergedPayrollExtras = { ...(localRH?.value?.payrollExtras || {}), ...(backupRH.payrollExtras || {}) };
+            const mergedSundays = Array.from(new Set([...(localRH?.value?.visibleSundays || []), ...(backupRH.visibleSundays || [])]));
+
             const updatedRHValue = {
-              employees: [...currentRHValue.employees, ...missingEmployees],
+              employees: backupEmployees, // Restores exact employee list from backup JSON
               attendance: mergedAttendance,
               payrollExtras: mergedPayrollExtras,
-              visibleSundays: Array.from(new Set([...(currentRHValue.visibleSundays || []), ...(backupRH.visibleSundays || [])]))
+              visibleSundays: mergedSundays
             };
 
-             await db.rhAppData.put({ key: 'rh_app_data', value: updatedRHValue });
-            // Do not cache the new rhAppData hash so that syncUp sees the local change as pending.
-            mergedCount += missingEmployees.length;
+            await db.rhAppData.put({ key: 'rh_app_data', value: updatedRHValue });
+            mergedCount += backupEmployees.length;
           }
 
-          // Trigger syncUp to push the restored data to Firestore
+          // Trigger syncUp to push updated/restored data to Firestore
           try {
             await syncUp();
           } catch (syncErr) {
-            console.warn('Sync up after merge failed, will retry later:', syncErr);
+            console.warn('Sync up after backup restore failed, will retry later:', syncErr);
           }
 
-          showToast(`Fusion complétée avec succès ! ${mergedCount} éléments insérés.`, 'success');
+          showToast(`Restauration et synchronisation complétées avec succès ! ${mergedCount} éléments synchronisés.`, 'success');
           (window as any).tempUploadedBackupData = null;
         } catch (err: any) {
           console.error(err);
