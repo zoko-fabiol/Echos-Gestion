@@ -689,24 +689,36 @@ const executeTool = async (name: string, args: any) => {
       }
 
       case "getActivityLogs": {
-        // Determine the target date (default = today)
-        const today = new Date();
-        const targetDateStr = args?.date || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        const [y, m, d] = targetDateStr.split('-').map(Number);
-        const startOfDay = new Date(y, m - 1, d).getTime();
-        const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
-
         const allLogs = await db.actionLogs.toArray();
-        const dayLogs = allLogs
-          .filter(log => log.timestamp >= startOfDay && log.timestamp < endOfDay)
-          .sort((a, b) => b.timestamp - a.timestamp);
+        const actionFilter = args?.action; // e.g. 'export'
+        const filterType = args?.filterType; // 'all_exports' or 'date'
+
+        let filteredLogs = allLogs;
+
+        if (filterType === 'all_exports' || actionFilter === 'export') {
+          // If asking about PDF/exports in general, fetch all export logs sorted by timestamp desc
+          filteredLogs = allLogs
+            .filter(log => log.action === 'export')
+            .sort((a, b) => b.timestamp - a.timestamp);
+        } else {
+          // Otherwise default to date filtering (today or specific date)
+          const today = new Date();
+          const targetDateStr = args?.date || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+          const [y, m, d] = targetDateStr.split('-').map(Number);
+          const startOfDay = new Date(y, m - 1, d).getTime();
+          const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
+
+          filteredLogs = allLogs
+            .filter(log => log.timestamp >= startOfDay && log.timestamp < endOfDay)
+            .sort((a, b) => b.timestamp - a.timestamp);
+        }
 
         // Translate action keys to French labels
         const actionLabels: Record<string, string> = {
           create: 'Ajout',
           update: 'Modification',
           delete: 'Suppression',
-          export: 'Export',
+          export: 'Export PDF / Document',
           login: 'Connexion'
         };
         const sectionLabels: Record<string, string> = {
@@ -715,18 +727,18 @@ const executeTool = async (name: string, args: any) => {
           salaires: 'Salaires', employes: 'Effectifs', dashboard: 'Tableau de bord', settings: 'Paramètres'
         };
 
-        const formatted = dayLogs.map(log => ({
+        const formatted = filteredLogs.map(log => ({
+          id: log.id,
           action: actionLabels[log.action] || log.action,
           section: sectionLabels[log.tabId] || log.tabId,
           utilisateur: log.userName || log.userEmail,
           email: log.userEmail,
-          heure: new Date(log.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          dateHeure: new Date(log.timestamp).toLocaleString('fr-FR'),
           details: log.details
         }));
 
         return {
           success: true,
-          date: targetDateStr,
           totalActions: formatted.length,
           data: formatted
         };
@@ -1119,6 +1131,15 @@ RÈGLE N°4 — STYLE DE RÉPONSE :
 - Pas d'astérisques (**gras**) à outrance. Texte simple et propre.
 - Listes avec des tirets simples (-) et retours à la ligne clairs.
 - Si une donnée n'existe pas dans la base, dis-le explicitement : "Cette information n'est pas dans la base de données."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RÈGLE N°5 — ANALYSE FINANCIÈRE ET RAPPORTS STRATÉGIQUES :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Si l'utilisateur demande un "bilan", une "analyse", des "statistiques" ou un "résultat" (ex: "Fais-moi le bilan de la semaine") :
+  1. Appelle systématiquement les outils de données nécessaires ('getSales', 'getExpenses', 'getInventory', 'getActivityLogs', etc.).
+  2. Calcule le Chiffre d'Affaires total (somme des ventes) et le total des Dépenses.
+  3. Calcule le Résultat Net estimé (Chiffre d'Affaires - Dépenses).
+  4. Synthétise la réponse sous forme de conseils et points clés clairs et structurés.
 
 CONTEXTE TEMPOREL :
 - Aujourd'hui nous sommes le : ${currentDateStr}.
