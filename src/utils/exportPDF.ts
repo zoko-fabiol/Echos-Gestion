@@ -674,53 +674,113 @@ interface CartItem {
 export const generateInvoicePDF = (
   cartItems: CartItem[],
   client?: { name?: string; phone?: string } | null,
-  mode: 'sale' | 'quote' = 'sale'
+  mode: 'sale' | 'quote' | 'delivery' = 'sale',
+  docRef?: string,
+  docDate?: string
 ): void => {
   if (!cartItems || cartItems.length === 0) {
-    showToast('Aucun article dans le panier.', 'warning');
+    showToast('Aucun article dans la liste.', 'warning');
     return;
   }
 
   const doc = new jsPDF() as any;
   const pageWidth = doc.internal.pageSize.getWidth();
-  const docType = mode === 'quote' ? 'DEVIS' : 'FACTURE / REÇU';
-  const startY = addPDFHeader(doc, docType);
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const docTypeTitle = mode === 'quote' ? 'DEVIS' : mode === 'delivery' ? 'BON DE LIVRAISON' : 'FACTURE DE VENTE';
+  const refCode = docRef || `${mode === 'quote' ? 'DEV' : mode === 'delivery' ? 'BON' : 'FAC'}-${Date.now().toString().slice(-6)}`;
+  
+  const startY = addPDFHeader(doc, `${docTypeTitle} - ${refCode}`);
+
+  if (docDate) {
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Date : ${new Date(docDate).toLocaleDateString('fr-FR')}`, pageWidth - 15, startY, { align: 'right' });
+  }
 
   if (client?.name) {
     doc.setFontSize(10);
     doc.setTextColor(0);
-    doc.text(`Client : ${client.name}`, 15, startY);
-    if (client.phone) doc.text(`Téléphone : ${client.phone}`, 15, startY + 5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`DÉTAILS CLIENT / DESTINATAIRE :`, 15, startY + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${client.name}`, 15, startY + 9);
+    if (client.phone) doc.text(`Tél : ${client.phone}`, 15, startY + 14);
   }
 
-  const tableStartY = client?.name ? startY + 12 : startY;
+  const tableStartY = client?.name ? startY + 20 : startY + 8;
 
-  doc.autoTable({
-    startY: tableStartY,
-    head: [['Produit', 'Qté', 'Prix Unitaire', 'Total']],
-    body: cartItems.map(i => [i.name, i.qty, `${formatNum(i.price)} F`, `${formatNum(i.total)} F`]),
-    theme: 'grid',
-    headStyles: tableHeadStyles,
-    styles: { fontSize: 9, cellPadding: 3 },
-    columnStyles: {
-      1: { halign: 'center', cellWidth: 18 },
-      2: { halign: 'right', cellWidth: 35 },
-      3: { halign: 'right', cellWidth: 35 },
-    },
-  });
+  if (mode === 'delivery') {
+    doc.autoTable({
+      startY: tableStartY,
+      head: [['#', 'Description', 'Stock Init.', 'Qté Livrée', 'Stock Fin.', 'Prix Unitaire']],
+      body: cartItems.map((i: any, idx: number) => [
+        idx + 1,
+        i.name,
+        i.initialStock ?? '-',
+        `${i.qty} ${i.unit || i.saleUnit || ''}`,
+        i.finalStock ?? '-',
+        `${formatNum(i.price)} F`
+      ]),
+      theme: 'grid',
+      headStyles: tableHeadStyles,
+      styles: { fontSize: 8.5, cellPadding: 2.5 },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 10 },
+        2: { halign: 'center' },
+        3: { halign: 'center', fontStyle: 'bold' },
+        4: { halign: 'center' },
+        5: { halign: 'right' },
+      },
+    });
+  } else {
+    doc.autoTable({
+      startY: tableStartY,
+      head: [['#', 'Description', 'Qté', 'Prix Unitaire (FCFA)', 'Total (FCFA)']],
+      body: cartItems.map((i: any, idx: number) => [
+        idx + 1,
+        i.name,
+        `${i.qty} ${i.saleUnit || ''}`,
+        formatNum(i.price),
+        formatNum(i.total || i.qty * i.price)
+      ]),
+      theme: 'grid',
+      headStyles: tableHeadStyles,
+      styles: { fontSize: 9, cellPadding: 3 },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 10 },
+        2: { halign: 'center', cellWidth: 24 },
+        3: { halign: 'right', cellWidth: 38 },
+        4: { halign: 'right', cellWidth: 38 },
+      },
+    });
+  }
 
-  const total = cartItems.reduce((s, i) => s + i.total, 0);
-  const finalY = (doc as any).lastAutoTable.finalY + 6;
+  const total = cartItems.reduce((s, i: any) => s + (i.total || i.qty * i.price), 0);
+  const finalY = (doc as any).lastAutoTable.finalY + 8;
 
+  // Total Box
   doc.setFillColor(220, 250, 224);
-  doc.rect(pageWidth - 80, finalY, 65, 12, 'F');
+  doc.rect(pageWidth - 85, finalY, 70, 14, 'F');
   doc.setTextColor(...BRAND_GREEN);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text(`TOTAL : ${formatNum(total)} FCFA`, pageWidth - 18, finalY + 8, { align: 'right' });
+  doc.text(`NET À PAYER : ${formatNum(total)} FCFA`, pageWidth - 18, finalY + 9, { align: 'right' });
+
+  // Signature Block
+  const sigY = Math.max(finalY + 30, pageHeight - 45);
+  doc.setFontSize(9);
+  doc.setTextColor(80);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Signature Client', 25, sigY);
+  doc.text('Signature Vendeur', pageWidth - 55, sigY);
+  doc.setDrawColor(180);
+  doc.setLineDash([2, 2], 0);
+  doc.line(20, sigY + 12, 70, sigY + 12);
+  doc.line(pageWidth - 65, sigY + 12, pageWidth - 15, sigY + 12);
 
   addPDFFooter(doc);
-  const fname = mode === 'quote' ? 'Devis' : 'Facture';
-  doc.save(`${fname}_${client?.name?.replace(/\s/g, '_') || 'Client'}_${getDateSuffix()}.pdf`);
-  showToast(`${fname} exportée en PDF !`, 'success');
+
+  const cleanPrefix = mode === 'quote' ? 'Devis' : mode === 'delivery' ? 'Bon_De_Livraison' : 'Facture';
+  doc.save(`${cleanPrefix}_${refCode}.pdf`);
+  showToast(`PDF ${cleanPrefix} téléchargé avec succès !`, 'success');
 };
