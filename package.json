@@ -19,6 +19,7 @@
   "dependencies": {
     "@azure/msal-node": "^5.4.0",
     "@capacitor-community/text-to-speech": "^8.0.2",
+    "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.4.1",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/share": "^8.0.1",
@@ -71,7 +72,7 @@
     "asar": true,
     "nodeGypRebuild": false,
     "win": {
-      "icon": "assets/icon.ico",
+      "icon": "assets/icon.png",
       "target": [
         {
           "target": "nsis",

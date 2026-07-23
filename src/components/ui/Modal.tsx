@@ -51,14 +51,22 @@ export const Modal: React.FC<ModalProps> = ({
     return () => { document.body.style.overflow = original; };
   }, [isOpen]);
 
-  // Fermer au clavier (Escape)
+  // Fermer au clavier (Escape) ou au bouton retour Android
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+    const handleAndroidBack = (e: Event) => {
+      e.preventDefault();
+      onClose();
+    };
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    window.addEventListener('android-back-button', handleAndroidBack);
+    return () => {
+      document.removeEventListener('keydown', handler);
+      window.removeEventListener('android-back-button', handleAndroidBack);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;

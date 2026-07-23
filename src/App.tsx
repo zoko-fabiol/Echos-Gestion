@@ -30,6 +30,8 @@ import 'jspdf-autotable';
 import { addPDFHeader, addPDFFooter, tableHeadStyles } from './utils/exportHelpers';
 import { getObjectHash, syncUp } from './services/syncEngine';
 
+import { App as CapApp } from '@capacitor/app';
+
 const AppContent: React.FC = () => {
   const { isLoggedIn, emailVerificationRequired, hasAccess, authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -51,6 +53,37 @@ const AppContent: React.FC = () => {
       initializeMistral();
     }
   }, [isLoggedIn]);
+
+  // Écouteur du bouton retour matériel d'Android (Capacitor & Web)
+  useEffect(() => {
+    let backListener: any;
+    const registerAndroidBack = async () => {
+      try {
+        backListener = await CapApp.addListener('backButton', () => {
+          const customBackEvent = new CustomEvent('android-back-button', { cancelable: true });
+          window.dispatchEvent(customBackEvent);
+
+          if (!customBackEvent.defaultPrevented) {
+            if (activeTab !== 'dashboard') {
+              setActiveTab('dashboard');
+            } else {
+              CapApp.exitApp();
+            }
+          }
+        });
+      } catch (err) {
+        // Environnement non-Capacitor
+      }
+    };
+
+    registerAndroidBack();
+
+    return () => {
+      if (backListener && typeof backListener.remove === 'function') {
+        backListener.remove();
+      }
+    };
+  }, [activeTab]);
 
   // Écouteur d'action de l'IA global (Navigation et Impression de fiches)
   useEffect(() => {

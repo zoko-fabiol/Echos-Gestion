@@ -417,6 +417,17 @@ export const AICopilotChat: React.FC = () => {
     }
   };
 
+  // Écouteur bouton retour Android pour fermer le chat s'il est ouvert
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleAndroidBack = (e: Event) => {
+      e.preventDefault();
+      handleClose();
+    };
+    window.addEventListener('android-back-button', handleAndroidBack);
+    return () => window.removeEventListener('android-back-button', handleAndroidBack);
+  }, [isOpen]);
+
   return (
     <div className="fixed bottom-20 right-4 sm:bottom-24 sm:right-6 lg:bottom-6 lg:right-6 z-40 font-sans">
       {/* Floating Action Button */}
