@@ -418,7 +418,7 @@ export const AICopilotChat: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-20 right-3 sm:bottom-24 sm:right-6 lg:bottom-6 z-50 font-sans">
+    <div className="fixed bottom-18 sm:bottom-24 right-2 sm:right-6 lg:bottom-6 z-50 font-sans">
       {/* Floating Action Button */}
       {!isOpen && (
         <button
@@ -437,62 +437,62 @@ export const AICopilotChat: React.FC = () => {
 
       {/* Chat Window Panel */}
       {isOpen && (
-        <div className="w-[calc(100vw-24px)] sm:w-[400px] max-w-[400px] h-[75vh] max-h-[550px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-scale">
+        <div className="w-[calc(100vw-16px)] sm:w-[400px] max-w-[420px] h-[78vh] sm:h-[550px] max-h-[600px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-scale">
           {/* Header */}
-          <div className="p-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-          <AppLogo size={40} fallback={
-            <div className="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white shadow-sm">
-              <Sparkles className="w-5 h-5" />
-            </div>
-          } />
-              <div>
-                <h3 className="font-bold text-slate-800 dark:text-white text-sm">Copilote IA</h3>
-                <span className="text-3xs text-emerald-500 dark:text-emerald-400 flex items-center gap-1 font-semibold">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-ping"></span>
+          <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <AppLogo size={36} fallback={
+                <div className="w-9 h-9 bg-brand rounded-full flex items-center justify-center text-white shadow-sm">
+                  <Sparkles className="w-4.5 h-4.5" />
+                </div>
+              } />
+              <div className="min-w-0">
+                <h3 className="font-bold text-slate-800 dark:text-white text-xs sm:text-sm truncate">Copilote IA</h3>
+                <span className="text-4xs sm:text-3xs text-emerald-500 dark:text-emerald-400 flex items-center gap-1 font-semibold truncate">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-ping flex-shrink-0"></span>
                   {isListening ? 'Écoute vocale active' : 'Copilote connecté'}
                 </span>
               </div>
             </div>
             
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <button
                 onClick={toggleMute}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 title={isMuted ? "Réactiver le son" : "Couper le son"}
               >
-                {isMuted ? <VolumeX className="w-4.5 h-4.5" /> : <Volume2 className="w-4.5 h-4.5 text-brand" />}
+                {isMuted ? <VolumeX className="w-4 h-4 sm:w-4.5 sm:h-4.5" /> : <Volume2 className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-brand" />}
               </button>
               
               <button
                 onClick={handleClose}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
 
           {/* Message List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/35 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-slate-50/50 dark:bg-slate-900/35 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             {messages.map((msg, index) => {
               const isAssistant = msg.role === 'assistant';
               return (
                 <div
                   key={index}
-                  className={`flex gap-3 max-w-[85%] ${
+                  className={`flex gap-2 sm:gap-3 max-w-[90%] sm:max-w-[85%] ${
                     isAssistant ? 'mr-auto' : 'ml-auto flex-row-reverse'
                   }`}
                 >
                   {isAssistant && (
-                    <AppLogo size={32} fallback={
-                      <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center border border-slate-200 dark:border-slate-700 flex-shrink-0">
-                        <Bot className="w-4 h-4 text-slate-500" />
+                    <AppLogo size={28} fallback={
+                      <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center border border-slate-200 dark:border-slate-700 flex-shrink-0">
+                        <Bot className="w-3.5 h-3.5 text-slate-500" />
                       </div>
                     } />
                   )}
                   <div
-                    className={`p-3 rounded-2xl text-sm ${
+                    className={`p-2.5 sm:p-3 rounded-2xl text-xs sm:text-sm ${
                       isAssistant
                         ? 'bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800/80 shadow-sm'
                         : 'bg-brand text-white shadow-md shadow-brand/10'
@@ -500,16 +500,16 @@ export const AICopilotChat: React.FC = () => {
                   >
                     {/* User-sent image preview inside chat history */}
                     {msg.imageUrl && (
-                      <div className="mb-2 max-w-[200px] overflow-hidden rounded-lg border dark:border-slate-800 shadow-sm">
-                        <img src={msg.imageUrl} alt="Attachement" className="w-full h-auto object-contain max-h-[140px]" />
+                      <div className="mb-2 max-w-[180px] sm:max-w-[200px] overflow-hidden rounded-lg border dark:border-slate-800 shadow-sm">
+                        <img src={msg.imageUrl} alt="Attachement" className="w-full h-auto object-contain max-h-[120px] sm:max-h-[140px]" />
                       </div>
                     )}
 
                     {/* User-sent JSON file card preview */}
                     {msg.jsonFileName && (
-                      <div className="mb-2 flex items-center gap-2.5 p-2 rounded-xl bg-white/10 border border-white/20 text-white">
-                        <FileText className="w-4.5 h-4.5 flex-shrink-0" />
-                        <span className="text-xs font-semibold truncate max-w-[180px]">
+                      <div className="mb-2 flex items-center gap-2 p-1.5 sm:p-2 rounded-xl bg-white/10 border border-white/20 text-white">
+                        <FileText className="w-4 h-4 flex-shrink-0" />
+                        <span className="text-3xs sm:text-xs font-semibold truncate max-w-[140px] sm:max-w-[180px]">
                           {msg.jsonFileName}
                         </span>
                       </div>
@@ -529,25 +529,25 @@ export const AICopilotChat: React.FC = () => {
                             }
                           }));
                         }}
-                        className="mt-3 flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-250 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all text-left w-full shadow-sm group"
+                        className="mt-2.5 flex items-center gap-2.5 p-2 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-250 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all text-left w-full shadow-sm group cursor-pointer"
                       >
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           msg.downloadInfo.fileName.endsWith('xlsx') 
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
                             : 'bg-red-500/10 text-red-600 dark:text-red-400'
                         }`}>
                           {msg.downloadInfo.fileName.endsWith('xlsx') ? (
-                            <FileSpreadsheet className="w-5 h-5" />
+                            <FileSpreadsheet className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
                           ) : (
-                            <FileText className="w-5 h-5" />
+                            <FileText className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="truncate font-semibold text-xs text-slate-700 dark:text-slate-200 group-hover:text-brand dark:group-hover:text-brand transition-colors">
+                          <p className="truncate font-semibold text-3xs sm:text-xs text-slate-700 dark:text-slate-200 group-hover:text-brand dark:group-hover:text-brand transition-colors">
                             {msg.downloadInfo.fileName}
                           </p>
-                          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                            Télécharger le fichier
+                          <span className="text-[8px] sm:text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                            Télécharger
                           </span>
                         </div>
                       </button>
@@ -558,7 +558,7 @@ export const AICopilotChat: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => speak(msg.content, true)}
-                          className="text-slate-400 hover:text-brand dark:hover:text-brand transition-colors p-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                          className="text-slate-400 hover:text-brand dark:hover:text-brand transition-colors p-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                           title="Réécouter ce message"
                         >
                           <Volume2 className="w-3.5 h-3.5" />
@@ -566,7 +566,7 @@ export const AICopilotChat: React.FC = () => {
                       ) : (
                         <div />
                       )}
-                      <span className="block text-[10px] text-slate-400 dark:text-slate-500">
+                      <span className="block text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500">
                         {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -577,13 +577,13 @@ export const AICopilotChat: React.FC = () => {
 
             {/* Thinking Indicator */}
             {loading && (
-              <div className="flex gap-3 max-w-[85%] mr-auto items-center">
-                <AppLogo size={32} fallback={
-                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center border border-slate-200 dark:border-slate-700 flex-shrink-0">
-                    <Bot className="w-4 h-4 text-slate-500" />
+              <div className="flex gap-2 sm:gap-3 max-w-[85%] mr-auto items-center">
+                <AppLogo size={28} fallback={
+                  <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center border border-slate-200 dark:border-slate-700 flex-shrink-0">
+                    <Bot className="w-3.5 h-3.5 text-slate-500" />
                   </div>
                 } />
-                <div className="bg-white dark:bg-slate-950 p-3 rounded-2xl text-sm text-slate-400 border border-slate-200 dark:border-slate-800/80 shadow-sm flex items-center gap-1.5">
+                <div className="bg-white dark:bg-slate-950 p-2.5 sm:p-3 rounded-2xl text-xs sm:text-sm text-slate-400 border border-slate-200 dark:border-slate-800/80 shadow-sm flex items-center gap-1.5">
                   <span className="w-2 h-2 bg-slate-400 dark:bg-slate-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                   <span className="w-2 h-2 bg-slate-400 dark:bg-slate-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
                   <span className="w-2 h-2 bg-slate-400 dark:bg-slate-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
@@ -596,17 +596,17 @@ export const AICopilotChat: React.FC = () => {
 
           {/* Selected Image Preview Bar */}
           {selectedImage && (
-            <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 animate-fade-scale">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <img src={selectedImage} alt="Preview" className="w-9 h-9 object-cover rounded-lg border dark:border-slate-800 flex-shrink-0" />
-                <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] font-semibold">
+            <div className="px-3 sm:px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 animate-fade-scale flex-shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <img src={selectedImage} alt="Preview" className="w-8 h-8 object-cover rounded-lg border dark:border-slate-800 flex-shrink-0" />
+                <span className="text-3xs sm:text-xs text-slate-500 dark:text-slate-400 truncate max-w-[150px] sm:max-w-[200px] font-semibold">
                   {imageFileName || 'Image en attente...'}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => { setSelectedImage(null); setImageFileName(null); }}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
                 title="Supprimer la sélection"
               >
                 <X className="w-4 h-4 stroke-[2.5]" />
@@ -616,16 +616,16 @@ export const AICopilotChat: React.FC = () => {
 
           {/* Selected JSON file preview bar */}
           {selectedJsonFile && (
-            <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 animate-fade-scale">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-5 h-5" />
+            <div className="px-3 sm:px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 animate-fade-scale flex-shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-4.5 h-4.5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-250 truncate">
+                  <p className="text-3xs sm:text-xs font-semibold text-slate-700 dark:text-slate-250 truncate">
                     {selectedJsonFile}
                   </p>
-                  <span className="text-[9px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider block">
+                  <span className="text-[8px] sm:text-[9px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider block">
                     Sauvegarde JSON en attente...
                   </span>
                 </div>
@@ -637,7 +637,7 @@ export const AICopilotChat: React.FC = () => {
                   setSelectedJsonData(null);
                   (window as any).tempUploadedBackupData = null;
                 }}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
                 title="Supprimer le fichier"
               >
                 <X className="w-4 h-4 stroke-[2.5]" />
@@ -646,7 +646,7 @@ export const AICopilotChat: React.FC = () => {
           )}
 
           {/* Form Input */}
-          <form onSubmit={handleSend} className="p-3 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex gap-2 items-center">
+          <form onSubmit={handleSend} className="p-2 sm:p-3 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex gap-1.5 sm:gap-2 items-center flex-shrink-0">
             <input 
               type="file"
               ref={fileInputRef}
@@ -658,23 +658,23 @@ export const AICopilotChat: React.FC = () => {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-xl transition-all"
+              className="p-2 sm:p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-xl transition-all cursor-pointer"
               title="Ajouter une image ou sauvegarde JSON"
             >
-              <Paperclip className="w-4.5 h-4.5" />
+              <Paperclip className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
 
             <button
               type="button"
               onClick={handleVoiceToggle}
-              className={`p-2.5 rounded-xl border transition-all ${
+              className={`p-2 sm:p-2.5 rounded-xl border transition-all cursor-pointer ${
                 isListening 
                   ? 'bg-red-500/10 border-red-500 text-red-500 animate-pulse scale-105' 
                   : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
               }`}
               title={isListening ? "Arrêter d'écouter" : "Parler"}
             >
-              {isListening ? <MicOff className="w-4.5 h-4.5" /> : <Mic className="w-4.5 h-4.5" />}
+              {isListening ? <MicOff className="w-4 h-4 sm:w-4.5 sm:h-4.5" /> : <Mic className="w-4 h-4 sm:w-4.5 sm:h-4.5" />}
             </button>
 
             <input
@@ -682,15 +682,15 @@ export const AICopilotChat: React.FC = () => {
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder={isListening ? "Écoute en cours..." : "Posez une question..."}
-              className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand placeholder-slate-400 dark:placeholder-slate-500"
+              className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white rounded-xl px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:outline-none focus:border-brand placeholder-slate-400 dark:placeholder-slate-500"
             />
             
             <button
               type="submit"
               disabled={(!input.trim() && !selectedImage && !selectedJsonFile) || loading}
-              className="p-2.5 bg-brand text-white rounded-xl hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-50 transition-all shadow-sm"
+              className="p-2 sm:p-2.5 bg-brand text-white rounded-xl hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-50 transition-all shadow-sm cursor-pointer flex-shrink-0"
             >
-              <Send className="w-4.5 h-4.5" />
+              <Send className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
           </form>
         </div>
