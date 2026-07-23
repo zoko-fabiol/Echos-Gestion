@@ -480,7 +480,7 @@ export const AICopilotChat: React.FC = () => {
               return (
                 <div
                   key={index}
-                  className={`flex gap-2 sm:gap-3 max-w-[90%] sm:max-w-[85%] ${
+                  className={`flex items-start gap-2 sm:gap-3 max-w-[92%] sm:max-w-[88%] ${
                     isAssistant ? 'mr-auto' : 'ml-auto flex-row-reverse'
                   }`}
                 >
@@ -492,7 +492,7 @@ export const AICopilotChat: React.FC = () => {
                     } />
                   )}
                   <div
-                    className={`p-2.5 sm:p-3 rounded-2xl text-xs sm:text-sm ${
+                    className={`flex-1 min-w-0 p-2.5 sm:p-3 rounded-2xl text-xs sm:text-sm break-words overflow-hidden ${
                       isAssistant
                         ? 'bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800/80 shadow-sm'
                         : 'bg-brand text-white shadow-md shadow-brand/10'
@@ -515,7 +515,7 @@ export const AICopilotChat: React.FC = () => {
                       </div>
                     )}
                     
-                    <p className="leading-relaxed whitespace-pre-wrap">{isAssistant ? cleanMarkdown(msg.content) : msg.content}</p>
+                    <p className="leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere text-xs sm:text-sm">{isAssistant ? cleanMarkdown(msg.content) : msg.content}</p>
 
                     {/* Interactive download card for generated PDFs or Excel sheets */}
                     {msg.downloadInfo && (
