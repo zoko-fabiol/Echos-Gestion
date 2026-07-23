@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, CalendarDays, Coins, 
   LayoutGrid, ShoppingCart, Package, CreditCard, 
   Factory, Settings, Activity, LogIn, Download, 
-  Clock, PlusCircle, Search, Filter
+  Clock, PlusCircle, Search, Filter, Bot
 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -104,6 +104,13 @@ export const Comptes: React.FC = () => {
           text: 'text-indigo-700 dark:text-indigo-400',
           icon: <LogIn className="w-4 h-4" />,
           label: 'Connexion'
+        };
+      case 'ai_command':
+        return {
+          bg: 'bg-teal-50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/35',
+          text: 'text-teal-700 dark:text-teal-400',
+          icon: <Bot className="w-4 h-4" />,
+          label: 'Commande IA'
         };
       default:
         return {
@@ -307,6 +314,22 @@ export const Comptes: React.FC = () => {
     syncUp().catch(err => console.warn('Background sync failed', err));
   };
 
+  const deleteLog = async (logId: string) => {
+    if (currentUser?.role !== 'admin') {
+      showToast('Seul un administrateur peut supprimer un log d\'historique.', 'error');
+      return;
+    }
+    if (confirm("Supprimer cette entrée de l'historique ?")) {
+      try {
+        await db.actionLogs.delete(logId);
+        showToast("Log supprimé de l'historique.", 'success');
+        syncUp().catch(err => console.warn('Background sync failed', err));
+      } catch (err) {
+        showToast("Erreur lors de la suppression du log.", 'error');
+      }
+    }
+  };
+
   const deleteUser = async (user: UserAccount) => {
     if (currentUser?.role !== 'admin') return;
     if (user.uid === currentUser?.uid) {
@@ -479,6 +502,7 @@ export const Comptes: React.FC = () => {
                   <option value="update">Modifications</option>
                   <option value="delete">Suppressions</option>
                   <option value="export">Exports (PDF/Excel)</option>
+                  <option value="ai_command">Commandes IA</option>
                   <option value="login">Connexions</option>
                 </select>
 
@@ -535,11 +559,20 @@ export const Comptes: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Section Pill indicator */}
-                      <div className="flex sm:justify-end items-center mt-2.5 sm:mt-0 pl-11 sm:pl-0">
+                      {/* Section Pill indicator & Delete button */}
+                      <div className="flex sm:justify-end items-center gap-2 mt-2.5 sm:mt-0 pl-11 sm:pl-0">
                         <span className="px-2.5 py-1 bg-slate-100/60 dark:bg-slate-800/50 border border-slate-200/40 dark:border-slate-800/40 rounded-full text-4xs font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           {getLogSectionLabel(log.tabId)}
                         </span>
+                        {currentUser?.role === 'admin' && (
+                          <button
+                            onClick={() => deleteLog(log.id)}
+                            title="Supprimer cette entrée"
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { AppLogo } from './AppLogo';
 import { isNativeApp, speakNative, stopSpeechNative } from '../utils/capacitorUtils';
 import { showToast } from './ui/Toast';
+import { logAction } from '../services/logService';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -311,6 +312,10 @@ export const AICopilotChat: React.FC = () => {
     ];
     setMessages(newMessages);
     setLoading(true);
+
+    // Record user command to AI in action logs for audit
+    const promptSummary = historyText || (currentJsonFile ? `Fichier de sauvegarde ${currentJsonFile}` : "Analyse d'image");
+    logAction('ai_command', 'copilot', `Instruction IA : "${promptSummary.length > 120 ? promptSummary.slice(0, 120) + '...' : promptSummary}"`);
 
     try {
       const history = newMessages.slice(0, -1).map(msg => ({

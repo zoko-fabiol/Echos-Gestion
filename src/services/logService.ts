@@ -5,7 +5,7 @@ import { auth } from '../config/firebase';
  * Enregistre une action utilisateur dans la table des logs et la synchronise.
  */
 export async function logAction(
-  action: 'create' | 'update' | 'delete' | 'login' | 'export' | 'auth_fail',
+  action: 'create' | 'update' | 'delete' | 'login' | 'export' | 'auth_fail' | 'ai_command',
   tabId: string,
   details: string,
   targetId?: string | number

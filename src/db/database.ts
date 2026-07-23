@@ -181,8 +181,8 @@ export interface ActionLog {
   timestamp: number;
   userEmail: string;
   userName?: string;
-  action: 'create' | 'update' | 'delete' | 'login' | 'export' | 'auth_fail';
-  tabId: string; // e.g. 'caisse', 'stock', 'rh', 'comptes', 'production'
+  action: 'create' | 'update' | 'delete' | 'login' | 'export' | 'auth_fail' | 'ai_command';
+  tabId: string; // e.g. 'caisse', 'stock', 'rh', 'comptes', 'production', 'copilot'
   details: string;
   targetId?: string;
 }
