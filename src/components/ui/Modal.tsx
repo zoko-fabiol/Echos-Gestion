@@ -66,7 +66,7 @@ export const Modal: React.FC<ModalProps> = ({
   return ReactDOM.createPortal(
     // Overlay – rendu directement dans <body>, jamais affecté par overflow parent
     <div
-      className="fixed top-0 left-0 w-screen h-screen z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
+      className="fixed top-0 left-0 w-screen h-screen z-[9999] flex items-center justify-center p-2 sm:p-4 bg-slate-950/60 backdrop-blur-sm"
       onClick={closeOnOverlay ? (e) => { if (e.target === e.currentTarget) onClose(); } : undefined}
     >
       {/* Boîte de dialogue */}
@@ -76,7 +76,7 @@ export const Modal: React.FC<ModalProps> = ({
       >
         {/* Header (fixe en haut) */}
         {title !== undefined && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
             <div className="flex items-center gap-2">
               {icon && <span className="text-brand">{icon}</span>}
               {typeof title === 'string' ? (

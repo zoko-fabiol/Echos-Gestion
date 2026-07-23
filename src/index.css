@@ -77,6 +77,22 @@
   }
 }
 
+/* Micro Typography & Responsive Utilities for Foldables & Smartphones */
+@layer utilities {
+  .text-4xs {
+    font-size: 0.6rem;
+    line-height: 0.8rem;
+  }
+  .text-3xs {
+    font-size: 0.68rem;
+    line-height: 0.9rem;
+  }
+  .text-2xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+}
+
 /* Animations */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }

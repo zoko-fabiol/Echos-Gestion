@@ -212,32 +212,30 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       {/* 2. MAIN APPLICATION CONTENT WRAPPER                       */}
       {/* ========================================================= */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        
         {/* Top Header */}
-        <header className="h-16 flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800/80 px-6 flex items-center justify-between z-25">
-          <div className="flex items-center gap-3">
-            {/* Mobile menu toggle (unused since mobile bottom nav is preferred, but here for header toggle if needed) */}
-            <h1 className="text-lg font-bold text-slate-800 dark:text-white capitalize flex items-center gap-2">
-              <AppLogo size={28} fallback={
-                <span className="font-extrabold text-brand font-sans tracking-tight lg:hidden">E.G</span>
-              } />
-              <span className="text-slate-400 dark:text-slate-600 lg:hidden">|</span>
+        <header className="h-14 sm:h-16 flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800/80 px-3 sm:px-6 flex items-center justify-between z-25">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <AppLogo size={28} fallback={
+              <span className="font-extrabold text-brand font-sans tracking-tight lg:hidden">E.G</span>
+            } />
+            <span className="text-slate-300 dark:text-slate-700 lg:hidden flex-shrink-0">|</span>
+            <h1 className="text-sm sm:text-lg font-bold text-slate-800 dark:text-white capitalize truncate">
               {getTabLabel(activeTab)}
             </h1>
           </div>
 
           {/* Network & Sync Status Header Panel */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             {/* Connection state */}
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-full">
+            <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-full">
               {isOnline ? (
                 <>
-                  <Wifi className="w-3.5 h-3.5 text-emerald-500" />
+                  <Wifi className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
                   <span className="text-2xs font-semibold text-slate-600 dark:text-slate-400 hidden sm:inline">En Ligne</span>
                 </>
               ) : (
                 <>
-                  <WifiOff className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                  <WifiOff className="w-3.5 h-3.5 text-red-500 animate-pulse flex-shrink-0" />
                   <span className="text-2xs font-semibold text-slate-600 dark:text-slate-400 hidden sm:inline">Hors Ligne</span>
                 </>
               )}
@@ -245,7 +243,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
 
             {/* Sync State Indicator */}
             {isOnline && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-full">
+              <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-full">
                 {getSyncIcon()}
                 <span className="text-2xs font-semibold text-slate-600 dark:text-slate-400 hidden sm:inline uppercase">
                   {syncStatus === 'syncing' ? 'Sync...' : syncStatus === 'ok' ? 'Cloud OK' : 'Cloud Err'}
@@ -256,7 +254,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             {/* Logout icon shortcut on mobile/tablet */}
             <button
               onClick={logout}
-              className="p-2 bg-slate-50 hover:bg-red-50 hover:text-red-500 dark:bg-slate-800/50 dark:hover:bg-slate-800 rounded-xl text-slate-500 lg:hidden transition-all"
+              className="p-1.5 sm:p-2 bg-slate-50 hover:bg-red-50 hover:text-red-500 dark:bg-slate-800/50 dark:hover:bg-slate-800 rounded-xl text-slate-500 lg:hidden transition-all cursor-pointer"
+              title="Se déconnecter"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -264,7 +263,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         </header>
 
         {/* Viewport for Pages */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-36 lg:pb-6 bg-slate-50 dark:bg-slate-950">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 pb-36 lg:pb-6 bg-slate-50 dark:bg-slate-950 w-full max-w-full">
           {children}
           {/* Safety spacer to prevent content from being hidden behind the mobile bottom nav bar */}
           <div className="h-24 w-full lg:hidden flex-shrink-0" />
@@ -274,7 +273,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       {/* ========================================================= */}
       {/* 3. MOBILE BOTTOM NAVIGATION                               */}
       {/* ========================================================= */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 px-4 flex items-center justify-between z-40">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 px-1 sm:px-4 flex items-center justify-between z-40">
         
         {/* Render maximum 4 priority items first */}
         {mobileMainItems.slice(0, 4).map(item => {
@@ -284,14 +283,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             <button
               key={item.id}
               onClick={() => handleTabChange(item.id)}
-              className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-1 rounded-xl transition-all ${
+              className={`flex-1 py-1 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all cursor-pointer ${
                 isActive 
                   ? 'text-brand font-bold scale-105' 
                   : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400'
               }`}
             >
-              <Icon className="w-5.5 h-5.5" />
-              <span className="text-3xs uppercase tracking-wider font-semibold truncate max-w-[70px]">
+              <Icon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+              <span className="text-4xs sm:text-3xs uppercase tracking-wider font-semibold truncate max-w-[64px] sm:max-w-[76px]">
                 {item.label}
               </span>
             </button>
@@ -302,14 +301,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         {mobilePlusItems.length > 0 && (
           <button
             onClick={() => setMobilePlusOpen(!mobilePlusOpen)}
-            className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-1 rounded-xl transition-all ${
+            className={`flex-1 py-1 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all cursor-pointer ${
               mobilePlusOpen 
                 ? 'text-brand font-bold' 
                 : 'text-slate-400 hover:text-slate-600 dark:text-slate-500'
             }`}
           >
-            <MoreHorizontal className="w-5.5 h-5.5" />
-            <span className="text-3xs uppercase tracking-wider font-semibold">Plus</span>
+            <MoreHorizontal className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+            <span className="text-4xs sm:text-3xs uppercase tracking-wider font-semibold">Plus</span>
           </button>
         )}
       </nav>
@@ -320,14 +319,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       {mobilePlusOpen && (
         <div className="lg:hidden fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-30" onClick={() => setMobilePlusOpen(false)}>
           <div 
-            className="absolute bottom-16 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-6 rounded-t-3xl max-h-[75vh] overflow-y-auto animate-slide-up flex flex-col gap-6"
+            className="absolute bottom-16 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 sm:p-6 rounded-t-3xl max-h-[80vh] overflow-y-auto animate-slide-up flex flex-col gap-5"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Autres Sections</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest">Autres Sections</h3>
               <button 
                 onClick={() => setMobilePlusOpen(false)}
-                className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-400"
+                className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -340,10 +339,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
 
               return (
                 <div key={sectionName} className="flex flex-col gap-2">
-                  <span className="text-3xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  <span className="text-4xs sm:text-3xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     {getSectionTitle(sectionName)}
                   </span>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {sectionItems.map(item => {
                       const Icon = item.icon;
                       const isActive = activeTab === item.id;
@@ -351,7 +350,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                         <button
                           key={item.id}
                           onClick={() => handleTabChange(item.id)}
-                          className={`flex items-center gap-3 p-3 rounded-xl border text-sm font-medium transition-all ${
+                          className={`flex items-center gap-3 p-2.5 sm:p-3 rounded-xl border text-sm font-medium transition-all cursor-pointer ${
                             isActive 
                               ? 'bg-brand/10 border-brand text-brand' 
                               : 'bg-slate-50 border-slate-100 hover:bg-slate-100 dark:bg-slate-950 dark:border-slate-800 text-slate-700 dark:text-slate-300'

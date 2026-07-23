@@ -418,15 +418,15 @@ export const AICopilotChat: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-24 right-6 lg:bottom-6 z-50 font-sans">
+    <div className="fixed bottom-20 right-3 sm:bottom-24 sm:right-6 lg:bottom-6 z-50 font-sans">
       {/* Floating Action Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="w-14 h-14 bg-brand hover:scale-105 active:scale-95 text-white rounded-full flex items-center justify-center shadow-lg shadow-brand/25 transition-all duration-200 group relative border border-white/10 overflow-hidden"
+          className="w-12 h-12 sm:w-14 sm:h-14 bg-brand hover:scale-105 active:scale-95 text-white rounded-full flex items-center justify-center shadow-lg shadow-brand/25 transition-all duration-200 group relative border border-white/10 overflow-hidden cursor-pointer"
         >
           <AppLogo size={56} className="bg-transparent shadow-none border-none p-2" fallback={
-            <Bot className="w-7 h-7 group-hover:rotate-12 transition-transform duration-300" />
+            <Bot className="w-6 h-6 sm:w-7 sm:h-7 group-hover:rotate-12 transition-transform duration-300" />
           } />
           <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand/60 opacity-75"></span>
@@ -437,7 +437,7 @@ export const AICopilotChat: React.FC = () => {
 
       {/* Chat Window Panel */}
       {isOpen && (
-        <div className="w-[360px] sm:w-[400px] h-[550px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-scale">
+        <div className="w-[calc(100vw-24px)] sm:w-[400px] max-w-[400px] h-[75vh] max-h-[550px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-scale">
           {/* Header */}
           <div className="p-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
