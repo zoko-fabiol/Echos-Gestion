@@ -6,6 +6,7 @@ import { AppLogo } from './AppLogo';
 import { isNativeApp, speakNative, stopSpeechNative } from '../utils/capacitorUtils';
 import { showToast } from './ui/Toast';
 import { logAction } from '../services/logService';
+import { parseUploadedDocument } from '../utils/importDocParser';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -228,36 +229,28 @@ export const AICopilotChat: React.FC = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type === 'application/json' || file.name.endsWith('.json')) {
+    const nameLower = file.name.toLowerCase();
+
+    if (nameLower.endsWith('.json') || nameLower.endsWith('.xlsx') || nameLower.endsWith('.xls') || nameLower.endsWith('.pdf')) {
       // Clear image state
       setSelectedImage(null);
       setImageFileName(null);
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        try {
-          const parsed = JSON.parse(reader.result as string);
-          (window as any).tempUploadedBackupData = parsed;
-          
-          // Summarize table counts for LLM prompt context
-          const counts: Record<string, number> = {};
-          Object.keys(parsed).forEach(key => {
-            if (Array.isArray(parsed[key])) {
-              counts[key] = parsed[key].length;
-            }
-          });
-          
-          setSelectedJsonFile(file.name);
-          setSelectedJsonData(counts);
-        } catch (err) {
-          alert("Fichier JSON de sauvegarde invalide.");
-        }
-      };
-      reader.readAsText(file);
+      try {
+        const { backupData, summary } = await parseUploadedDocument(file);
+        (window as any).tempUploadedBackupData = backupData;
+        
+        setSelectedJsonFile(file.name);
+        setSelectedJsonData(summary);
+        showToast(`Document "${file.name}" importé et prêt pour la restauration !`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast("Erreur lors de l'analyse du document.", 'error');
+      }
     } else {
       // Clear JSON state
       setSelectedJsonFile(null);
@@ -296,7 +289,7 @@ export const AICopilotChat: React.FC = () => {
     const historyText = userText;
     if (currentJsonFile && selectedJsonData) {
       userText = (userText || "Importe cette sauvegarde.") + 
-        `\n\n[Fichier de sauvegarde JSON "${currentJsonFile}" importé localement en mémoire. Contenu détecté (nombre d'éléments par table) : ${JSON.stringify(selectedJsonData)}]`;
+        `\n\n[Fichier de sauvegarde/document "${currentJsonFile}" importé localement en mémoire. Contenu détecté (nombre d'éléments par table) : ${JSON.stringify(selectedJsonData)}]`;
     }
 
     // Add user message to state
@@ -637,7 +630,7 @@ export const AICopilotChat: React.FC = () => {
                     {selectedJsonFile}
                   </p>
                   <span className="text-[8px] sm:text-[9px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider block">
-                    Sauvegarde JSON en attente...
+                    Document / Sauvegarde en attente...
                   </span>
                 </div>
               </div>
@@ -662,7 +655,7 @@ export const AICopilotChat: React.FC = () => {
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept="image/*,.json"
+              accept="image/*,.json,.xlsx,.xls,.pdf"
               className="hidden"
             />
 
@@ -670,7 +663,7 @@ export const AICopilotChat: React.FC = () => {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="p-2 sm:p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-xl transition-all cursor-pointer"
-              title="Ajouter une image ou sauvegarde JSON"
+              title="Joindre un fichier (PDF, Excel, JSON ou Image)"
             >
               <Paperclip className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
