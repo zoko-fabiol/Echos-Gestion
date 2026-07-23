@@ -373,6 +373,7 @@ export const Employees: React.FC = () => {
           <table className="w-full min-w-[700px]">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+                <th className="table-header text-center w-12">N°</th>
                 <th className="table-header">Nom Complet</th>
                 <th className="table-header text-center">Site</th>
                 <th className="table-header text-center">Type Contrat</th>
@@ -385,13 +386,14 @@ export const Employees: React.FC = () => {
             <tbody>
               {filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm italic text-slate-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-sm italic text-slate-400">
                     Aucun employé trouvé.
                   </td>
                 </tr>
               ) : (
-                filteredEmployees.map(emp => (
+                filteredEmployees.map((emp, index) => (
                   <tr key={emp.id} className="table-row">
+                    <td className="table-cell text-center font-mono text-xs text-slate-400 font-extrabold">{index + 1}</td>
                     <td className="table-cell font-semibold text-slate-800 dark:text-slate-100">
                       {emp.nom} {emp.prenom}
                     </td>
@@ -444,7 +446,7 @@ export const Employees: React.FC = () => {
           {filteredEmployees.length === 0 ? (
             <p className="text-center text-sm italic text-slate-400 py-6">Aucun employé trouvé.</p>
           ) : (
-            filteredEmployees.map(emp => (
+            filteredEmployees.map((emp, index) => (
               <div 
                 key={emp.id}
                 className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-3 relative"
@@ -459,6 +461,7 @@ export const Employees: React.FC = () => {
                 </span>
 
                 <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-3xs font-extrabold rounded-md">#{index + 1}</span>
                   <User className="w-4 h-4 text-brand" />
                   <span className="font-bold text-slate-800 dark:text-white">{emp.nom} {emp.prenom}</span>
                 </div>

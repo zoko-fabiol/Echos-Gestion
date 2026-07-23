@@ -251,6 +251,7 @@ export const Salaires: React.FC = () => {
           <table className="w-full min-w-[750px]">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+                <th className="table-header text-center w-12">N°</th>
                 <th className="table-header">Nom Complet</th>
                 <th className="table-header text-right">Salaire Base</th>
                 <th className="table-header text-center">Abs (Déd.)</th>
@@ -263,13 +264,14 @@ export const Salaires: React.FC = () => {
             <tbody>
               {filteredPayroll.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm italic text-slate-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-sm italic text-slate-400">
                     Aucun employé trouvé.
                   </td>
                 </tr>
               ) : (
-                filteredPayroll.map(p => (
+                filteredPayroll.map((p, index) => (
                   <tr key={p.emp.id} className="table-row">
+                    <td className="table-cell text-center font-mono text-xs text-slate-400 font-extrabold">{index + 1}</td>
                     <td className="table-cell font-semibold text-slate-800 dark:text-slate-100">
                       {p.emp.nom} {p.emp.prenom}
                       <span className="text-4xs font-normal text-slate-400 block tracking-normal italic mt-0.5">
