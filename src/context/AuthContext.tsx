@@ -448,22 +448,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let userCred;
       const provider = getMicrosoftProvider();
 
-      // Electron MSAL OAuth Bypass Handler
-      if (window.location.protocol === 'file:' && (window as any).electronAPI) {
-        const response = await (window as any).electronAPI.loginWithMicrosoft();
-        
-        if (!response || !response.idToken) {
-          const errMessage = response?.error || 'Connexion annulée : la fenêtre de connexion Microsoft a été fermée.';
-          throw new Error(errMessage);
+      // Electron SSO OAuth Handler
+      if ((window as any).electronAPI?.loginWithMicrosoft) {
+        try {
+          const response = await (window as any).electronAPI.loginWithMicrosoft();
+          
+          if (!response || response.error || !response.idToken) {
+            // Fallback to Popup in case IPC auth window was closed or skipped
+            userCred = await signInWithPopup(auth, provider);
+          } else {
+            const credential = OAuthProvider.credential({
+              idToken: response.idToken,
+              accessToken: response.accessToken || undefined
+            });
+            userCred = await signInWithCredential(auth, credential);
+          }
+        } catch (ipcErr) {
+          console.warn('[Electron MSAL fallback to popup]', ipcErr);
+          userCred = await signInWithPopup(auth, provider);
         }
-
-        // Authenticate directly inside the Electron webview client context using MSAL tokens
-        const credential = OAuthProvider.credential({
-          idToken: response.idToken,
-          accessToken: response.accessToken || undefined
-        });
-
-        userCred = await signInWithCredential(auth, credential);
       } else {
         // Classical web browser auth flow
         userCred = await signInWithPopup(auth, provider);
