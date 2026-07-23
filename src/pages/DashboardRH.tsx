@@ -4,9 +4,12 @@ import { db, DailyRecord, Quote } from '../db/database';
 import { useAuth } from '../context/AuthContext';
 import { 
   Users, Calendar, Coins, ArrowUpRight, BarChart3, 
-  TrendingUp, ShoppingBag, Eye, CalendarDays, Search 
+  TrendingUp, ShoppingBag, Eye, CalendarDays, Search,
+  Printer, Trash2
 } from 'lucide-react';
 import { SITES, MONTHS } from '../config/constants';
+import { showToast } from '../components/ui/Toast';
+import { syncUp } from '../services/syncEngine';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -22,7 +25,6 @@ import {
 } from 'chart.js';
 import { useExports } from '../hooks/useExports';
 import { InvoicePreviewModal, InvoiceData } from '../components/modals/InvoicePreviewModal';
-import { syncUp } from '../services/syncEngine';
 
 ChartJS.register(
   CategoryScale,
@@ -199,9 +201,41 @@ export const DashboardRH: React.FC = () => {
   }, [stats.periodDeliveries, searchTerm]);
 
   // --- ACTION HANDLERS ---
-  const handleOpenPreview = (record: DailyRecord | Quote, type: 'sale' | 'delivery') => {
+  const handleOpenPreview = (record: DailyRecord | Quote, type: 'sale' | 'delivery', e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setSelectedRecord(record);
     setPreviewType(type);
+  };
+
+  const printOrderFromSale = (s: DailyRecord, e: React.MouseEvent) => {
+    e.stopPropagation();
+    generateInvoicePDF(s.items, { name: 'Client' }, 'sale');
+  };
+
+  const deleteHistoryRecord = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!hasAccess('transactions', 'delete')) {
+      showToast('Opération non autorisée.', 'error');
+      return;
+    }
+    if (confirm("Supprimer cet historique de vente ? Le stock NE sera PAS rétabli.")) {
+      await db.dailyRecords.delete(id);
+      showToast("Historique de vente supprimé.", 'success');
+      syncUp().catch(err => console.warn('Background sync failed', err));
+    }
+  };
+
+  const deleteQuoteRecord = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!hasAccess('transactions', 'delete')) {
+      showToast('Opération non autorisée.', 'error');
+      return;
+    }
+    if (confirm("Supprimer ce bon de livraison ?")) {
+      await db.quotes.delete(id);
+      showToast("Bon de livraison supprimé.", 'success');
+      syncUp().catch(err => console.warn('Background sync failed', err));
+    }
   };
 
   const handleSaveInvoice = async (updated: InvoiceData) => {
@@ -499,12 +533,31 @@ export const DashboardRH: React.FC = () => {
                           +{margin.toLocaleString()} F
                         </td>
                         <td className="table-cell text-center">
-                          <button 
-                            onClick={() => handleOpenPreview(s, 'sale')}
-                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-brand transition-colors"
-                          >
-                            <Eye className="w-4.5 h-4.5" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button 
+                              onClick={(e) => handleOpenPreview(s, 'sale', e)}
+                              className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-brand transition-colors cursor-pointer"
+                              title="Visualiser la facture"
+                            >
+                              <Eye className="w-4.5 h-4.5" />
+                            </button>
+                            <button 
+                              onClick={(e) => printOrderFromSale(s, e)}
+                              className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
+                              title="Imprimer le reçu/facture"
+                            >
+                              <Printer className="w-4.5 h-4.5" />
+                            </button>
+                            {hasAccess('transactions', 'delete') && (
+                              <button 
+                                onClick={(e) => deleteHistoryRecord(s.id, e)}
+                                className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-600 transition-colors cursor-pointer"
+                                title="Supprimer la vente"
+                              >
+                                <Trash2 className="w-4.5 h-4.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -551,12 +604,24 @@ export const DashboardRH: React.FC = () => {
                           {q.total.toLocaleString()} F
                         </td>
                         <td className="table-cell text-center">
-                          <button 
-                            onClick={() => handleOpenPreview(q, 'delivery')}
-                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-brand transition-colors"
-                          >
-                            <Eye className="w-4.5 h-4.5" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button 
+                              onClick={(e) => handleOpenPreview(q, 'delivery', e)}
+                              className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-brand transition-colors cursor-pointer"
+                              title="Visualiser le bon de livraison"
+                            >
+                              <Eye className="w-4.5 h-4.5" />
+                            </button>
+                            {hasAccess('transactions', 'delete') && (
+                              <button 
+                                onClick={(e) => deleteQuoteRecord(q.id, e)}
+                                className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-600 transition-colors cursor-pointer"
+                                title="Supprimer le bon"
+                              >
+                                <Trash2 className="w-4.5 h-4.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

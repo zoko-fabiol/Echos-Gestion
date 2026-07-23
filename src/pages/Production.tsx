@@ -361,10 +361,18 @@ export const ProductionPage: React.FC = () => {
                     </td>
                     <td className="table-cell text-center">
                       <div className="flex items-center justify-center gap-1.5">
-                        <button onClick={() => openEditRaw(rm)} className="p-1 text-slate-400 hover:text-brand">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); openEditRaw(rm); }} 
+                          className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-brand transition-colors cursor-pointer"
+                          title="Modifier la matière première"
+                        >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => deleteRawLog(rm.id)} className="p-1 text-slate-400 hover:text-red-500">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); deleteRawLog(rm.id); }} 
+                          className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
+                          title="Supprimer la matière première"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>

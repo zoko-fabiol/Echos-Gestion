@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { 
   CreditCard, Search, Filter, Plus, Edit2, Trash2, 
   Save, TrendingUp, TrendingDown, ArrowRightLeft, 
-  Calendar, DollarSign 
+  Calendar, DollarSign, Eye, Printer
 } from 'lucide-react';
 import { CATEGORIES_DEPENSES } from '../config/constants';
 import { showToast } from '../components/ui/Toast';
@@ -13,6 +13,8 @@ import { syncUp } from '../services/syncEngine';
 import { useExports } from '../hooks/useExports';
 import { ExportButton } from '../components/ExportButton';
 import { Modal } from '../components/ui/Modal';
+import { exportDailyReportPDF } from '../utils/exportPDF';
+
 // --- TRANSACTIONS COMPTABLES PAGE ---
 
 
@@ -24,9 +26,10 @@ export const Transactions: React.FC = () => {
   const incomes = useLiveQuery(() => db.income.toArray()) || [];
   const products = useLiveQuery(() => db.inventory.toArray()) || [];
   const suppliers = useLiveQuery(() => db.suppliers.toArray()) || [];
+  const clients = useLiveQuery(() => db.clients.toArray()) || [];
 
-  // Tabs: 'expense' or 'income'
-  const [activeTab, setActiveTab] = useState<'expense' | 'income'>('expense');
+  // Tabs: 'expense' | 'income' | 'partners'
+  const [activeTab, setActiveTab] = useState<'expense' | 'income' | 'partners'>('expense');
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,14 +40,22 @@ export const Transactions: React.FC = () => {
   // Modals
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
-
+  const [showPartnerModal, setShowPartnerModal] = useState(false);
+  const [selectedExpensePreview, setSelectedExpensePreview] = useState<Expense | null>(null);
 
   const [expenseMode, setExpenseMode] = useState<'create' | 'edit'>('create');
-
   const [incomeMode, setIncomeMode] = useState<'create' | 'edit'>('create');
+  const [partnerMode, setPartnerMode] = useState<'create' | 'edit'>('create');
   
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
+  const [selectedPartner, setSelectedPartner] = useState<{ id: string; name: string; contact?: string; phone?: string; type: 'client' | 'supplier' } | null>(null);
+
+  // Form Fields - Partner
+  const [partnerName, setPartnerName] = useState('');
+  const [partnerType, setPartnerType] = useState<'client' | 'supplier'>('client');
+  const [partnerContact, setPartnerContact] = useState('');
+  const [partnerPhone, setPartnerPhone] = useState('');
 
   // Form Fields - Expense
   const [expDate, setExpDate] = useState(new Date().toISOString().split('T')[0]);
@@ -292,6 +303,71 @@ export const Transactions: React.FC = () => {
     }
   };
 
+  // --- CRUD OPERATIONS PARTNERS (CLIENTS & FOURNISSEURS) ---
+
+  const openAddPartner = () => {
+    setPartnerMode('create');
+    setSelectedPartner(null);
+    setPartnerName('');
+    setPartnerType('client');
+    setPartnerContact('');
+    setPartnerPhone('');
+    setShowPartnerModal(true);
+  };
+
+  const openEditClientSupplier = (p: { id: string; name: string; contact?: string; phone?: string; type: 'client' | 'supplier' }, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setPartnerMode('edit');
+    setSelectedPartner(p);
+    setPartnerName(p.name);
+    setPartnerType(p.type);
+    setPartnerContact(p.contact || '');
+    setPartnerPhone(p.phone || '');
+    setShowPartnerModal(true);
+  };
+
+  const savePartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!partnerName.trim()) {
+      showToast('Nom du partenaire requis.', 'warning');
+      return;
+    }
+    const id = partnerMode === 'edit' && selectedPartner ? selectedPartner.id : `partner_${Date.now()}`;
+    const payload = {
+      id,
+      name: partnerName.trim(),
+      contact: partnerContact.trim(),
+      phone: partnerPhone.trim()
+    };
+
+    if (partnerType === 'client') {
+      await db.clients.put(payload);
+    } else {
+      await db.suppliers.put(payload);
+    }
+
+    showToast(`Partenaire ${partnerType === 'client' ? 'Client' : 'Fournisseur'} sauvegardé.`, 'success');
+    setShowPartnerModal(false);
+    syncUp().catch(err => console.warn('Background sync failed', err));
+  };
+
+  const deleteClientSupplier = async (id: string, type: 'client' | 'supplier', e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!hasAccess('transactions', 'delete')) {
+      showToast('Opération non autorisée.', 'error');
+      return;
+    }
+    if (confirm(`Voulez-vous supprimer ce ${type === 'client' ? 'client' : 'fournisseur'} ?`)) {
+      if (type === 'client') {
+        await db.clients.delete(id);
+      } else {
+        await db.suppliers.delete(id);
+      }
+      showToast('Partenaire supprimé.', 'success');
+      syncUp().catch(err => console.warn('Background sync failed', err));
+    }
+  };
+
   const { 
     exportExpensesPDF, exportExpensesXLSX,
     exportIncomeHistoryPDF, exportIncomeXLSX
@@ -369,7 +445,7 @@ export const Transactions: React.FC = () => {
           />
           
           <button
-            onClick={activeTab === 'expense' ? openAddExpense : openAddIncome}
+            onClick={activeTab === 'expense' ? openAddExpense : activeTab === 'income' ? openAddIncome : openAddPartner}
             className="px-4 py-3 bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm hover:bg-emerald-900 transition-all flex items-center gap-2 cursor-pointer h-full"
           >
             <Plus className="w-4 h-4" />
@@ -445,6 +521,16 @@ export const Transactions: React.FC = () => {
           >
             Fiche des Rentrées d'argent
           </button>
+          <button
+            onClick={() => { setActiveTab('partners'); setSearchTerm(''); }}
+            className={`py-4 px-6 text-sm font-bold border-b-2 transition-all ${
+              activeTab === 'partners' 
+                ? 'border-brand text-brand' 
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Clients & Fournisseurs (Partenaires)
+          </button>
         </div>
 
         {/* 4. Display Table / Cards */}
@@ -500,14 +586,23 @@ export const Transactions: React.FC = () => {
                       <td className="table-cell text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
-                            onClick={() => openEditExpense(exp)}
-                            className="p-1 text-slate-400 hover:text-brand transition-colors"
+                            onClick={(e) => { e.stopPropagation(); setSelectedExpensePreview(exp); }}
+                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-brand transition-colors cursor-pointer"
+                            title="Aperçu Facture / Justificatif"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openEditExpense(exp); }}
+                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-amber-600 transition-colors cursor-pointer"
+                            title="Modifier la dépense"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => deleteExpense(exp.id)}
-                            className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); deleteExpense(exp.id); }}
+                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
+                            title="Supprimer la dépense"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -519,7 +614,7 @@ export const Transactions: React.FC = () => {
               </tbody>
             </table>
           </div>
-        ) : (
+        ) : activeTab === 'income' ? (
           /* INCOME TABLE */
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px]">
@@ -557,14 +652,16 @@ export const Transactions: React.FC = () => {
                       <td className="table-cell text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
-                            onClick={() => openEditIncome(inc)}
-                            className="p-1 text-slate-400 hover:text-brand transition-colors"
+                            onClick={(e) => { e.stopPropagation(); openEditIncome(inc); }}
+                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-brand transition-colors cursor-pointer"
+                            title="Modifier l'entrée d'argent"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => deleteIncome(inc.id)}
-                            className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); deleteIncome(inc.id); }}
+                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
+                            title="Supprimer l'entrée d'argent"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -573,6 +670,74 @@ export const Transactions: React.FC = () => {
                     </tr>
                   ))
                 )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* PARTNERS (CLIENTS & FOURNISSEURS) TABLE */
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px]">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+                  <th className="table-header">Nom du Partenaire</th>
+                  <th className="table-header text-center">Type</th>
+                  <th className="table-header">Contact / Représentant</th>
+                  <th className="table-header">Téléphone</th>
+                  <th className="table-header text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const allPartners = [
+                    ...clients.map(c => ({ ...c, type: 'client' as const })),
+                    ...suppliers.map(s => ({ ...s, type: 'supplier' as const }))
+                  ].filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || (p.contact || '').toLowerCase().includes(searchTerm.toLowerCase()));
+
+                  if (allPartners.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-sm italic text-slate-400">
+                          Aucun partenaire (client ou fournisseur) trouvé.
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return allPartners.map(p => (
+                    <tr key={`${p.type}-${p.id}`} className="table-row">
+                      <td className="table-cell font-bold text-slate-800 dark:text-slate-100">{p.name}</td>
+                      <td className="table-cell text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-2xs font-extrabold uppercase ${
+                          p.type === 'client' 
+                            ? 'bg-blue-500/10 text-blue-600' 
+                            : 'bg-amber-500/10 text-amber-600'
+                        }`}>
+                          {p.type === 'client' ? 'Client' : 'Fournisseur'}
+                        </span>
+                      </td>
+                      <td className="table-cell font-medium text-slate-600 dark:text-slate-300">{p.contact || '-'}</td>
+                      <td className="table-cell font-mono text-xs text-slate-700 dark:text-slate-300">{p.phone || '-'}</td>
+                      <td className="table-cell text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={(e) => openEditClientSupplier(p, e)}
+                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-brand transition-colors cursor-pointer"
+                            title="Modifier le partenaire"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => deleteClientSupplier(p.id, p.type, e)}
+                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
+                            title="Supprimer le partenaire"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ));
+                })()}
               </tbody>
             </table>
           </div>
@@ -851,6 +1016,174 @@ export const Transactions: React.FC = () => {
               </div>
 
             </form>
+      </Modal>
+
+      {/* --- MODAL APERÇU FACTURE / JUSTIFICATIF DÉPENSE --- */}
+      {selectedExpensePreview && (
+        <Modal
+          isOpen={!!selectedExpensePreview}
+          onClose={() => setSelectedExpensePreview(null)}
+          title={`Justificatif Dépense / Achat N° DOC-EXP-${selectedExpensePreview.id.toString().slice(-6)}`}
+          icon={<CreditCard className="w-5 h-5 text-brand" />}
+          size="lg"
+        >
+          <div className="p-6 space-y-5 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans">
+            <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div>
+                <span className="text-3xs font-extrabold text-brand uppercase tracking-wider block">Pièce Justificative</span>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">DOC-EXP-{selectedExpensePreview.id.toString().slice(-6)}</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Enregistré le {new Date(selectedExpensePreview.date).toLocaleDateString('fr-FR')}
+                </p>
+              </div>
+              <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                {selectedExpensePreview.category}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                <span className="text-slate-400 font-semibold block mb-1">Catégorie & Type</span>
+                <p className="font-bold text-slate-700 dark:text-slate-200">{selectedExpensePreview.category}</p>
+                <p className="text-2xs text-slate-400 capitalize mt-0.5">{selectedExpensePreview.type || 'Général'}</p>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                <span className="text-slate-400 font-semibold block mb-1">Fournisseur / Tiers</span>
+                <p className="font-bold text-slate-700 dark:text-slate-200">{selectedExpensePreview.supplier || 'N/A'}</p>
+              </div>
+            </div>
+
+            {selectedExpensePreview.productName && (
+              <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-xs">
+                <span className="text-slate-400 font-semibold block mb-1">Détails Produit / Matière Première</span>
+                <div className="flex justify-between font-bold text-slate-700 dark:text-slate-200">
+                  <span>{selectedExpensePreview.productName}</span>
+                  {selectedExpensePreview.transportCost ? (
+                    <span className="text-2xs text-amber-600">Frais transport : +{selectedExpensePreview.transportCost.toLocaleString()} F</span>
+                  ) : null}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200/60 dark:border-slate-800">
+              <span className="text-slate-400 font-semibold block mb-1 text-xs">Description & Motif</span>
+              <p className="text-sm font-medium leading-relaxed">{selectedExpensePreview.description || 'Aucune observation enregistrée.'}</p>
+            </div>
+
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-4 flex items-center justify-between">
+              <div>
+                <span className="text-3xs uppercase tracking-wider text-slate-400 font-bold block">Statut Règlement</span>
+                <span className={`text-xs font-black ${
+                  selectedExpensePreview.paymentType === 'partial' ? 'text-amber-600' : 'text-emerald-600'
+                }`}>
+                  {selectedExpensePreview.paymentType === 'partial' ? `Reste à payer : ${selectedExpensePreview.remainingAmount?.toLocaleString()} F` : 'Entièrement Régler'}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-3xs uppercase tracking-wider text-slate-400 font-bold block">Montant Total HT</span>
+                <span className="text-2xl font-black font-mono text-red-500">{selectedExpensePreview.amount.toLocaleString()} F CFA</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setSelectedExpensePreview(null)}
+                className="btn-secondary text-xs"
+              >
+                Fermer
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="btn-primary text-xs flex items-center gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimer le Justificatif
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* --- MODAL AJOUT / ÉDITION PARTENAIRE (CLIENT & FOURNISSEUR) --- */}
+      <Modal
+        isOpen={showPartnerModal}
+        onClose={() => setShowPartnerModal(false)}
+        title={partnerMode === 'create' ? 'Nouveau Partenaire' : 'Modifier le Partenaire'}
+        size="md"
+      >
+        <form onSubmit={savePartner} className="p-6 flex flex-col gap-4">
+          <div>
+            <label className="form-label">Type de Partenaire</label>
+            <div className="grid grid-cols-2 gap-3 mt-1">
+              <button
+                type="button"
+                onClick={() => setPartnerType('client')}
+                className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                  partnerType === 'client' 
+                    ? 'bg-brand text-white border-brand' 
+                    : 'bg-slate-50 border-slate-200 text-slate-600'
+                }`}
+              >
+                Client
+              </button>
+              <button
+                type="button"
+                onClick={() => setPartnerType('supplier')}
+                className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                  partnerType === 'supplier' 
+                    ? 'bg-brand text-white border-brand' 
+                    : 'bg-slate-50 border-slate-200 text-slate-600'
+                }`}
+              >
+                Fournisseur
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label">Nom du Partenaire *</label>
+            <input
+              type="text"
+              required
+              value={partnerName}
+              onChange={e => setPartnerName(e.target.value)}
+              className="form-input"
+              placeholder="Ex: Echos Market, GROUPE SODEXO..."
+            />
+          </div>
+
+          <div>
+            <label className="form-label">Contact / Représentant</label>
+            <input
+              type="text"
+              value={partnerContact}
+              onChange={e => setPartnerContact(e.target.value)}
+              className="form-input"
+              placeholder="Nom du contact privilégié"
+            />
+          </div>
+
+          <div>
+            <label className="form-label">Téléphone</label>
+            <input
+              type="text"
+              value={partnerPhone}
+              onChange={e => setPartnerPhone(e.target.value)}
+              className="form-input"
+              placeholder="+225 0700000000"
+            />
+          </div>
+
+          <div className="flex gap-3 justify-end border-t border-slate-100 dark:border-slate-800/80 pt-4 mt-2">
+            <button type="button" onClick={() => setShowPartnerModal(false)} className="btn-secondary">Annuler</button>
+            <button type="submit" className="btn-primary">
+              <Save className="w-4 h-4" />
+              {partnerMode === 'create' ? 'Enregistrer' : 'Sauvegarder'}
+            </button>
+          </div>
+        </form>
       </Modal>
 
     </div>
