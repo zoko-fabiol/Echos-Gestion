@@ -2,6 +2,7 @@ import { doc, getDoc, getDocs, collection, setDoc, updateDoc } from 'firebase/fi
 import { firestore } from '../config/firebase';
 import { db } from '../db/database';
 import { syncUp } from './syncEngine';
+import { getItemYearAndMonth } from '../utils/exportHelpers';
 
 let cachedApiKey: string | null = null;
 
@@ -64,8 +65,14 @@ const tools = [
     type: "function" as const,
     function: {
       name: "getExpenses",
-      description: "Récupère l'historique des dépenses récentes directement depuis Firebase.",
-      parameters: { type: "object", properties: {} }
+      description: "Récupère l'historique des dépenses enregistrées (filtrables par année et/ou mois).",
+      parameters: {
+        type: "object",
+        properties: {
+          year: { type: "number", description: "Optionnel : L'année recherchée (ex: 2026)." },
+          month: { type: "number", description: "Optionnel : Le mois recherché de 1 à 12 (ex: 7 pour Juillet)." }
+        }
+      }
     }
   },
   {
@@ -690,8 +697,33 @@ const executeTool = async (name: string, args: any) => {
       }
 
       case "getExpenses": {
-        const expenses = await db.expenses.toArray();
-        return { success: true, count: expenses.length, data: expenses.slice(-20) };
+        const allExpenses = await db.expenses.toArray();
+        const { year, month } = args || {};
+
+        let filtered = allExpenses;
+        if (year) {
+          filtered = filtered.filter((e: any) => {
+            const parsed = getItemYearAndMonth(e.date);
+            if (!parsed) return false;
+            const yearMatch = parsed.year === year;
+            const monthMatch = month ? parsed.month === (month - 1) : true;
+            return yearMatch && monthMatch;
+          });
+        }
+
+        // Tri par date décroissante pour renvoyer en priorité les dépenses les plus récentes (ex: 2026)
+        filtered.sort((a: any, b: any) => {
+          const tA = new Date(a.date).getTime() || 0;
+          const tB = new Date(b.date).getTime() || 0;
+          return tB - tA;
+        });
+
+        return {
+          success: true,
+          totalExpensesInDb: allExpenses.length,
+          matchedExpensesCount: filtered.length,
+          data: filtered.slice(0, 100)
+        };
       }
 
       case "getActivityLogs": {
