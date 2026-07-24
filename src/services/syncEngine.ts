@@ -118,7 +118,7 @@ export async function syncUp(): Promise<{ ok: boolean; timestamp: number } | nul
       }
     }
 
-    // 4. Batch push regular tables (limit 350 items per batch)
+    // 4. Batch push regular tables & delete obsolete remote documents from Firestore
     for (const collName of Object.keys(state)) {
       const items = state[collName];
       if (collName === 'userAccounts') {
@@ -144,6 +144,24 @@ export async function syncUp(): Promise<{ ok: boolean; timestamp: number } | nul
           localStorage.setItem(`synchash_userAccounts_${user.uid}`, currentHash);
         }
         continue;
+      }
+
+      // Fetch all remote doc IDs from Firestore to remove documents deleted locally in Dexie
+      const remoteSnap = await getDocs(collection(firestore, collName));
+      const localIdSet = new Set(items.map(x => String(x.id)));
+
+      const remoteDocsToDelete = remoteSnap.docs.filter((d: any) => !localIdSet.has(d.id));
+      if (remoteDocsToDelete.length > 0) {
+        const deleteChunks = chunkArray(remoteDocsToDelete, 350);
+        for (const chunk of deleteChunks) {
+          const deleteBatch = writeBatch(firestore);
+          chunk.forEach((d: any) => {
+            deleteBatch.delete(d.ref);
+            localStorage.removeItem(`synchash_${collName}_${d.id}`);
+          });
+          await deleteBatch.commit();
+        }
+        console.info(`[SyncEngine] Deleted ${remoteDocsToDelete.length} obsolete docs from Firestore in "${collName}".`);
       }
 
       const chunks = chunkArray(items, 350);
