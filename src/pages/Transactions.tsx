@@ -27,6 +27,8 @@ export const Transactions: React.FC = () => {
   const products = useLiveQuery(() => db.inventory.toArray()) || [];
   const suppliers = useLiveQuery(() => db.suppliers.toArray()) || [];
   const clients = useLiveQuery(() => db.clients.toArray()) || [];
+  const dailyRecords = useLiveQuery(() => db.dailyRecords.toArray()) || [];
+  const quotes = useLiveQuery(() => db.quotes.toArray()) || [];
 
   // Tabs: 'expense' | 'income' | 'partners'
   const [activeTab, setActiveTab] = useState<'expense' | 'income' | 'partners'>('expense');

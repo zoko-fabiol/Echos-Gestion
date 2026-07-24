@@ -353,7 +353,7 @@ export function startRealtimeSync(onSyncCompleted?: () => void): void {
           } catch (e) {
             console.warn('[SyncEngine] Real-time pull refresh failed:', e);
           }
-        }, 1000);
+        }, 300);
       }
     }, (err: any) => {
       console.warn(`[SyncEngine] Firestore subscription error for ${collName}:`, err);
