@@ -64,6 +64,74 @@ const tools = [
   {
     type: "function" as const,
     function: {
+      name: "getSalesHistory",
+      description: "Récupère l'historique des ventes et recettes POS enregistrées (filtrables par année, mois ou nom de client).",
+      parameters: {
+        type: "object",
+        properties: {
+          year: { type: "number", description: "Optionnel : L'année recherchée (ex: 2026)." },
+          month: { type: "number", description: "Optionnel : Le mois recherché de 1 à 12 (ex: 7 pour Juillet)." },
+          clientName: { type: "string", description: "Optionnel : Nom du client recherché." }
+        }
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "getFinancialSummary",
+      description: "Récupère le bilan financier officiel (Total Rentrées, Ventes POS, Revenus annexes, Total Dépenses, et Solde Net Exercice) pour une année ou un mois donné.",
+      parameters: {
+        type: "object",
+        properties: {
+          year: { type: "number", description: "L'année ciblée (ex: 2026)." },
+          month: { type: "number", description: "Optionnel : Le mois de 1 à 12." }
+        },
+        required: ["year"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "getProduction",
+      description: "Récupère les rapports de production et matières premières consommées (filtrables par année/mois).",
+      parameters: {
+        type: "object",
+        properties: {
+          year: { type: "number", description: "Optionnel : L'année (ex: 2026)." },
+          month: { type: "number", description: "Optionnel : Le mois de 1 à 12." }
+        }
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "getRawMaterials",
+      description: "Récupère l'état et les mouvements de stock des matières premières.",
+      parameters: { type: "object", properties: {} }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "getClients",
+      description: "Récupère la liste des clients enregistrés.",
+      parameters: { type: "object", properties: {} }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "getSuppliers",
+      description: "Récupère la liste des fournisseurs enregistrés.",
+      parameters: { type: "object", properties: {} }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
       name: "getExpenses",
       description: "Récupère l'historique des dépenses enregistrées (filtrables par année et/ou mois).",
       parameters: {
@@ -652,6 +720,121 @@ const executeTool = async (name: string, args: any) => {
         return { success: true, count: employees.length, data: employees };
       }
 
+      case "getSalesHistory": {
+        const allSales = await db.dailyRecords.toArray();
+        const { year, month, clientName } = args || {};
+
+        let filtered = allSales;
+        if (year) {
+          filtered = filtered.filter((s: any) => {
+            const parsed = getItemYearAndMonth(s.date);
+            if (!parsed) return false;
+            const yearMatch = parsed.year === year;
+            const monthMatch = month ? parsed.month === (month - 1) : true;
+            return yearMatch && monthMatch;
+          });
+        }
+        if (clientName) {
+          filtered = filtered.filter((s: any) => 
+            (s.clientName || '').toLowerCase().includes(clientName.toLowerCase())
+          );
+        }
+
+        const totalRevenue = filtered.reduce((sum: number, s: any) => sum + (s.total || 0), 0);
+        const totalMargin = filtered.reduce((sum: number, s: any) => sum + (s.margin || 0), 0);
+
+        filtered.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        return {
+          success: true,
+          totalSalesCount: filtered.length,
+          totalRevenueFCFA: totalRevenue,
+          totalMarginFCFA: totalMargin,
+          data: filtered.slice(0, 100)
+        };
+      }
+
+      case "getFinancialSummary": {
+        const targetYear = args?.year || new Date().getFullYear();
+        const targetMonth = args?.month ? args.month - 1 : -1;
+
+        const allExpenses = await db.expenses.toArray();
+        const allIncomes = await db.income.toArray();
+        const allSales = await db.dailyRecords.toArray();
+
+        const filterByDate = (dateStr: string) => {
+          const parsed = getItemYearAndMonth(dateStr);
+          if (!parsed) return false;
+          const yearMatch = parsed.year === targetYear;
+          const monthMatch = targetMonth === -1 ? true : parsed.month === targetMonth;
+          return yearMatch && monthMatch;
+        };
+
+        const yearExpenses = allExpenses.filter((e: any) => filterByDate(e.date));
+        const yearIncomes = allIncomes.filter((i: any) => filterByDate(i.date));
+        const yearSales = allSales.filter((s: any) => filterByDate(s.date));
+
+        const totalExpenses = yearExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+        const totalSalesRevenue = yearSales.reduce((sum: number, s: any) => sum + (s.total || 0), 0);
+        const totalOtherIncomes = yearIncomes.reduce((sum: number, i: any) => sum + (i.amount || 0), 0);
+        const totalRentrees = totalSalesRevenue + totalOtherIncomes;
+        const soldeNet = totalRentrees - totalExpenses;
+
+        return {
+          success: true,
+          year: targetYear,
+          month: args?.month || "Toute l'année",
+          totalRentreesFCFA: totalRentrees,
+          detailRentrees: {
+            ventesPOS: totalSalesRevenue,
+            revenusAnnexes: totalOtherIncomes
+          },
+          totalExpensesFCFA: totalExpenses,
+          soldeNetExerciceFCFA: soldeNet,
+          nombreVentes: yearSales.length,
+          nombreDepenses: yearExpenses.length
+        };
+      }
+
+      case "getProduction": {
+        const allProd = await db.productions.toArray();
+        const { year, month } = args || {};
+
+        let filtered = allProd;
+        if (year) {
+          filtered = filtered.filter((p: any) => {
+            const parsed = getItemYearAndMonth(p.date);
+            if (!parsed) return false;
+            const yearMatch = parsed.year === year;
+            const monthMatch = month ? parsed.month === (month - 1) : true;
+            return yearMatch && monthMatch;
+          });
+        }
+
+        filtered.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        return {
+          success: true,
+          totalRecords: filtered.length,
+          data: filtered.slice(0, 100)
+        };
+      }
+
+      case "getRawMaterials": {
+        const materials = await db.rawMaterials.toArray();
+        return { success: true, count: materials.length, data: materials };
+      }
+
+      case "getClients": {
+        const clients = await db.clients.toArray();
+        return { success: true, count: clients.length, data: clients };
+      }
+
+      case "getSuppliers": {
+        const suppliers = await db.suppliers.toArray();
+        return { success: true, count: suppliers.length, data: suppliers };
+      }
+
       case "getAttendance": {
         const { year, month } = args;
         const dbMonthIndex = month - 1; // months in UI are 1-12, but inside data key we format year-month-day
@@ -1135,41 +1318,39 @@ export const askMistral = async (
 Tu as un accès complet en lecture, écriture, modification et suppression (CRUD) sur toutes les données de la base via les outils disponibles.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RÈGLE ABSOLUE N°1 — ANTI-HALLUCINATION (CRITIQUE) :
+RÈGLE ABSOLUE N°1 — EXCLUSIVITÉ DES DONNÉES DE LA PLATEFORME (0% HALLUCINATION) :
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Tu NE DOIS JAMAIS inventer, supposer ou deviner des données (noms, prénoms, IDs, salaires, stocks, montants, dates, statuts, etc.).
-- TOUTES tes réponses concernant des données doivent être EXCLUSIVEMENT basées sur ce que les outils te retournent.
-- Si un employé, produit, client ou autre élément n'est PAS présent dans la réponse de l'outil, il N'EXISTE PAS. Tu dois le dire clairement à l'utilisateur.
-- Si tu n'es pas certain qu'un élément existe, appelle d'abord l'outil pour vérifier.
+- Tu NE DOIS JAMAIS inventer, estimer, ni deviner des chiffres, des montants, des stocks, des noms, des dates ou des statuts.
+- TOUTES tes déclarations sur les chiffres de l'entreprise doivent provenir À 100% des retours d'outils (function calling).
+- Si un outil retourne 0 élément ou des données partielles, réponds exactement sur ce qui est retourné par l'outil sans spéculer.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RÈGLE ABSOLUE N°2 — APPEL D'OUTIL OBLIGATOIRE AVANT TOUTE RÉPONSE SUR LES DONNÉES :
+RÈGLE ABSOLUE N°2 — APPEL D'OUTIL OBLIGATOIRE AVANT TOUTE RÉPONSE :
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Question sur les employés → appelle TOUJOURS 'getEmployees' avant de répondre.
-- Question sur les produits/stocks → appelle TOUJOURS 'getInventory' avant de répondre.
-- Question sur les ventes/historique → appelle TOUJOURS 'getSales' avant de répondre.
-- Question sur les dépenses → appelle TOUJOURS 'getExpenses' avant de répondre.
-- Question sur les clients → appelle TOUJOURS 'getClients' avant de répondre.
-- Question sur les fournisseurs → appelle TOUJOURS 'getSuppliers' avant de répondre.
-- Question sur les absences/pointage → appelle TOUJOURS 'getAttendance' avant de répondre.
-- Question sur les activités du jour / ce qui a été fait / qui a fait quoi / actions récentes → appelle TOUJOURS 'getActivityLogs' avant de répondre.
-- N'utilise JAMAIS des données que tu "crois connaître" : les données changent, appelle toujours l'outil.
+- Question sur les chiffres/bilan/résultat/recettes → appelle TOUJOURS 'getFinancialSummary' (avec l'année demandée, ex: 2026).
+- Question sur les ventes/historique → appelle TOUJOURS 'getSalesHistory' (avec l'année/mois).
+- Question sur les dépenses/achats → appelle TOUJOURS 'getExpenses' (avec l'année/mois).
+- Question sur l'inventaire/stocks/produits → appelle TOUJOURS 'getInventory'.
+- Question sur les effectifs/employés/salaires → appelle TOUJOURS 'getEmployees'.
+- Question sur les présences/pointages → appelle TOUJOURS 'getAttendance'.
+- Question sur la production/fabrication → appelle TOUJOURS 'getProduction'.
+- Question sur les matières premières → appelle TOUJOURS 'getRawMaterials'.
+- Question sur les clients → appelle TOUJOURS 'getClients'.
+- Question sur les fournisseurs → appelle TOUJOURS 'getSuppliers'.
+- Question sur les journaux/activités/actions récents → appelle TOUJOURS 'getActivityLogs'.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RÈGLE ABSOLUE N°3 — MODIFICATION ET SUPPRESSION :
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Pour toute modification ou suppression d'un employé, appelle D'ABORD 'getEmployees' pour trouver l'ID exact.
+- Pour toute modification ou suppression d'un produit, employé, client, dépense ou vente, appelle D'ABORD l'outil d'interrogation correspondant pour trouver l'ID exact.
 - N'invente JAMAIS un ID. N'utilise que les IDs retournés par les outils.
-- Si le nom demandé par l'utilisateur ne correspond à AUCUN employé dans la liste retournée par 'getEmployees', réponds : "Je n'ai trouvé aucun employé avec ce nom dans la base de données."
-- Les noms sont dans le champ 'nom' (souvent en MAJUSCULES) et les prénoms dans 'prenom'. Fais la correspondance en ignorant la casse et l'ordre (Nom Prénom ou Prénom Nom).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RÈGLE N°4 — STYLE DE RÉPONSE :
+RÈGLE N°4 — STYLE ET FORMAT :
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- N'utilise JAMAIS de tableaux Markdown (pas de | ou de ---).
-- Pas d'astérisques (**gras**) à outrance. Texte simple et propre.
-- Listes avec des tirets simples (-) et retours à la ligne clairs.
-- Si une donnée n'existe pas dans la base, dis-le explicitement : "Cette information n'est pas dans la base de données."
+- Rédige tes réponses de façon professionnelle, claire et structurée avec des puces (-).
+- Cite les chiffres exacts avec la monnaie (FCFA).
+- N'utilise pas de tableaux Markdown bruts (pas de séparateurs verticales ou tirets). Utilise des listes à puces aérées.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RÈGLE N°5 — ANALYSE FINANCIÈRE ET RAPPORTS STRATÉGIQUES :
