@@ -11,7 +11,7 @@ import {
 import { doc, getDoc, setDoc, collection, addDoc, getDocs } from 'firebase/firestore';
 import { auth, firestore, getMicrosoftProvider, ALLOWED_EMAIL_DOMAINS, MICROSOFT_TENANT_ID } from '../config/firebase';
 import { db, UserAccount } from '../db/database';
-import { startRealtimeSync, stopRealtimeSync } from '../services/syncEngine';
+import { startRealtimeSync, stopRealtimeSync, syncDown } from '../services/syncEngine';
 
 // --- SHA-256 SECURE OFFLINE HELPER ---
 
@@ -22,6 +22,9 @@ export async function hashString(str: string): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+// ... (keep rest)
+
 
 // --- PERMISSIONS TYPES ---
 
@@ -178,7 +181,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (firebaseUser) {
           const docRef = doc(firestore, 'userAccounts', firebaseUser.uid);
-          const docSnap = await getDoc(docRef);
+          let docSnap = await getDoc(docRef);
+          
+          // Auto-provision user account profile in Firestore if doc doesn't exist yet for new colleague
+          if (!docSnap.exists()) {
+            const defaultUser: UserAccount = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Collègue',
+              role: 'user',
+              status: 'active',
+              createdAt: Date.now()
+            };
+            await setDoc(docRef, defaultUser);
+            await db.userAccounts.put(defaultUser);
+            docSnap = await getDoc(docRef);
+          }
+
           if (docSnap.exists()) {
             const userProfile = docSnap.data() as UserAccount;
             // check active
@@ -200,6 +219,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setIsAppLocked(true); // Ask for PIN on reconnect/load
                   }
                 } catch (e) {}
+              }
+
+              // IMMEDIATELY pull remote company data so colleague sees existing items!
+              try {
+                await syncDown();
+              } catch (syncErr) {
+                console.warn('[Auth] Initial syncDown failed, falling back to local cache', syncErr);
               }
 
               startRealtimeSync();

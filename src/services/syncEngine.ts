@@ -333,6 +333,9 @@ export async function syncDown(): Promise<void> {
 export function startRealtimeSync(onSyncCompleted?: () => void): void {
   stopRealtimeSync();
 
+  // Initial immediate syncDown pull on startup
+  syncDown().catch(err => console.warn('[SyncEngine] Initial startup syncDown failed:', err));
+
   COLLECTIONS.forEach(collName => {
     const unsubscribe = onSnapshot(collection(firestore, collName), (snapshot: any) => {
       // Ignore if local writes are pending
