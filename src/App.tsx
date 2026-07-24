@@ -23,6 +23,7 @@ import { ProductionPage } from './pages/Production';
 import { Comptes } from './pages/Comptes';
 import { SettingsPage } from './pages/Settings';
 import { AICopilotChat } from './components/AICopilotChat';
+import { trackDeletedDocs } from './services/syncEngine';
 import { initializeMistral } from './services/mistralService';
 import { useExports } from './hooks/useExports';
 import jsPDF from 'jspdf';
@@ -268,6 +269,7 @@ const AppContent: React.FC = () => {
 
               if (toDeleteIds.length > 0) {
                 await table.bulkDelete(toDeleteIds);
+                trackDeletedDocs(tableName, toDeleteIds);
                 deletedCount += toDeleteIds.length;
               }
 
