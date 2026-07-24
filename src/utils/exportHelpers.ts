@@ -38,14 +38,59 @@ export const formatTime = (dateStr: string): string => {
 
 // --- Filtres temporels ---
 
-/** Filtre un tableau d'objets avec champ `date` (ISO string) selon la période choisie */
-export const filterByTime = <T extends { date: string }>(list: T[], filter: string): T[] => {
+/** Extrait de manière robuste l'année et le mois (0-11) de tout format de date (French DD/MM/YYYY, ISO, Date obj) */
+export const getItemYearAndMonth = (dateStr: any): { year: number; month: number } | null => {
+  if (!dateStr) return null;
+  
+  if (typeof dateStr === 'string') {
+    const trimmed = dateStr.trim();
+    // Format français DD/MM/YYYY
+    if (trimmed.includes('/')) {
+      const parts = trimmed.split('/');
+      if (parts.length >= 3) {
+        const month = parseInt(parts[1], 10) - 1; // 0-indexed month
+        const year = parseInt(parts[2].slice(0, 4), 10);
+        if (!isNaN(year) && !isNaN(month)) return { year, month };
+      }
+    }
+    // Format ISO YYYY-MM-DD
+    if (trimmed.includes('-')) {
+      const parts = trimmed.split('-');
+      if (parts.length >= 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // 0-indexed month
+        if (!isNaN(year) && !isNaN(month)) return { year, month };
+      }
+    }
+  }
+
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    return { year: d.getFullYear(), month: d.getMonth() };
+  }
+
+  return null;
+};
+
+/** Filtre un tableau d'objets avec champ `date` selon l'année sélectionnée et la période */
+export const filterByTime = <T extends { date: string }>(list: T[], filter: string, targetYear?: number): T[] => {
   const now = new Date();
+  const currentYear = targetYear || now.getFullYear();
+
   return list.filter(item => {
-    const d = new Date(item.date);
+    const parsed = getItemYearAndMonth(item.date);
+    if (!parsed) return false;
+
+    // Filtre strict sur l'année sélectionnée
+    if (parsed.year !== currentYear) {
+      return false;
+    }
+
     switch (filter) {
-      case 'today':
-        return d.toDateString() === now.toDateString();
+      case 'today': {
+        const d = new Date(item.date);
+        return !isNaN(d.getTime()) && d.toDateString() === now.toDateString();
+      }
       case 'week': {
         const start = new Date(now);
         start.setDate(now.getDate() - now.getDay() + 1);
@@ -53,14 +98,14 @@ export const filterByTime = <T extends { date: string }>(list: T[], filter: stri
         const end = new Date(start);
         end.setDate(start.getDate() + 6);
         end.setHours(23, 59, 59, 999);
-        return d >= start && d <= end;
+        const d = new Date(item.date);
+        return !isNaN(d.getTime()) && d >= start && d <= end;
       }
       case 'month':
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        return parsed.month === now.getMonth() && parsed.year === currentYear;
       case 'year':
-        return d.getFullYear() === now.getFullYear();
       default:
-        return true;
+        return parsed.year === currentYear;
     }
   });
 };

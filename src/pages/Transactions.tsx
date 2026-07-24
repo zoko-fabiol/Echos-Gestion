@@ -14,6 +14,7 @@ import { useExports } from '../hooks/useExports';
 import { ExportButton } from '../components/ExportButton';
 import { Modal } from '../components/ui/Modal';
 import { exportDailyReportPDF } from '../utils/exportPDF';
+import { getItemYearAndMonth } from '../utils/exportHelpers';
 
 // --- TRANSACTIONS COMPTABLES PAGE ---
 
@@ -82,28 +83,34 @@ export const Transactions: React.FC = () => {
   // --- DERIVED METRICS ---
 
   const metrics = useMemo(() => {
-    // Filter by year & month
+    // Filter strictly by selectedYear and selectedMonth
     const filterByDate = (dateStr: string) => {
-      const d = new Date(dateStr);
-      const yearMatch = d.getFullYear() === selectedYear;
-      const monthMatch = selectedMonth === -1 ? true : d.getMonth() === selectedMonth;
+      const parsed = getItemYearAndMonth(dateStr);
+      if (!parsed) return false;
+      const yearMatch = parsed.year === selectedYear;
+      const monthMatch = selectedMonth === -1 ? true : parsed.month === selectedMonth;
       return yearMatch && monthMatch;
     };
 
     const yearExpenses = expenses.filter(e => filterByDate(e.date));
     const yearIncomes = incomes.filter(i => filterByDate(i.date));
+    const yearSales = dailyRecords.filter(r => filterByDate(r.date));
 
-    const totalExp = yearExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const totalInc = yearIncomes.reduce((sum, i) => sum + i.amount, 0);
+    const totalExp = yearExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const totalInc = yearIncomes.reduce((sum, i) => sum + (i.amount || 0), 0);
+    const totalSales = yearSales.reduce((sum, r) => sum + (r.total || 0), 0);
+
+    const totalRentrees = totalSales + totalInc;
 
     return {
       expensesList: yearExpenses,
       incomesList: yearIncomes,
+      salesList: yearSales,
       totalExpenses: totalExp,
-      totalIncome: totalInc,
-      netProfit: totalInc - totalExp
+      totalIncome: totalRentrees,
+      netProfit: totalRentrees - totalExp
     };
-  }, [expenses, incomes, selectedYear, selectedMonth]);
+  }, [expenses, incomes, dailyRecords, selectedYear, selectedMonth]);
 
   // --- FILTERED AND SEARCHED LISTS ---
 
