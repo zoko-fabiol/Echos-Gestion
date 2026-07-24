@@ -188,10 +188,16 @@ const tools = [
     type: "function" as const,
     function: {
       name: "mergeBackupData",
-      description: "Fusionne les données du fichier de sauvegarde JSON importé dans la base de données. N'ajoute que les éléments manquants (produits, dépenses, ventes, etc.) sans écraser les données existantes.",
+      description: "Restaure et synchronise les données du fichier de sauvegarde importé. Élimine les doublons par clé d'unicité naturelle et supprime les éléments obsolètes de la section ciblée qui ne sont pas dans le fichier.",
       parameters: {
         type: "object",
-        properties: {}
+        properties: {
+          targetTables: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optionnel : Liste des tables spécifiques demandées par l'utilisateur (ex: ['expenses'] pour les dépenses uniquement, ['inventory'] pour le stock, ['employees'] pour le personnel, ['dailyRecords'] pour les ventes, ['all'] pour tout)."
+          }
+        }
       }
     }
   },
@@ -1051,8 +1057,9 @@ const executeTool = async (name: string, args: any) => {
       }
 
       case "mergeBackupData": {
-        window.dispatchEvent(new CustomEvent('ai-action', { detail: { action: 'mergeBackupData', args: {} } }));
-        return { success: true, message: "La fusion des données manquantes de la sauvegarde a été lancée avec succès." };
+        const { targetTables = ["all"] } = args;
+        window.dispatchEvent(new CustomEvent('ai-action', { detail: { action: 'mergeBackupData', args: { targetTables } } }));
+        return { success: true, message: `La synchronisation et restauration des données (${targetTables.join(', ')}) a été lancée avec succès.` };
       }
 
       default:

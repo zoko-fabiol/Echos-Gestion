@@ -174,84 +174,175 @@ const AppContent: React.FC = () => {
         doc.save(fileName);
       } else if (action === 'mergeBackupData') {
         const backup = (window as any).tempUploadedBackupData;
+        const targetTables: string[] = args?.targetTables || ['all'];
+
         if (!backup) {
           showToast("Aucune donnée de sauvegarde en mémoire à fusionner.", 'error');
           return;
         }
 
+        const shouldSync = (tableName: string) => {
+          if (targetTables.includes('all') || targetTables.includes('*')) return true;
+          return targetTables.some(t => t.toLowerCase() === tableName.toLowerCase() || t.toLowerCase() === tableName.toLowerCase() + 's');
+        };
+
         try {
           let mergedCount = 0;
-          
+          let deletedCount = 0;
+
+          // Helper : Clés d'unicité naturelle (Business Keys) pour empêcher TOUT doublon
+          const getKeyForTable = (tableName: string, x: any): string => {
+            if (!x) return '';
+            if (tableName === 'expenses') {
+              const d = String(x.date || '').slice(0, 10);
+              const desc = String(x.description || '').trim().toLowerCase();
+              const amt = Number(x.amount || 0);
+              const cat = String(x.category || '').trim().toLowerCase();
+              return `exp_${d}_${desc}_${amt}_${cat}`;
+            }
+            if (tableName === 'inventory') {
+              return `inv_${String(x.name || '').trim().toLowerCase()}`;
+            }
+            if (tableName === 'dailyRecords') {
+              const d = String(x.date || '').slice(0, 10);
+              const tot = Number(x.total || 0);
+              const client = String(x.clientName || '').trim().toLowerCase();
+              return `sale_${d}_${tot}_${client}`;
+            }
+            if (tableName === 'rawMaterials') {
+              return `raw_${String(x.name || '').trim().toLowerCase()}`;
+            }
+            if (tableName === 'productions') {
+              const d = String(x.date || '').slice(0, 10);
+              const pName = String(x.productName || '').trim().toLowerCase();
+              const rName = String(x.rawMaterialName || '').trim().toLowerCase();
+              const qty = Number(x.quantity || 0);
+              return `prod_${d}_${pName}_${rName}_${qty}`;
+            }
+            if (tableName === 'clients' || tableName === 'suppliers') {
+              return `${tableName}_${String(x.name || '').trim().toLowerCase()}`;
+            }
+            if (tableName === 'quotes') {
+              const d = String(x.date || '').slice(0, 10);
+              const tot = Number(x.total || 0);
+              const client = String(x.clientName || '').trim().toLowerCase();
+              return `quote_${d}_${tot}_${client}`;
+            }
+            return `id_${x.id}`;
+          };
+
           await db.transaction('rw', [
             db.inventory, db.dailyRecords, db.expenses, db.clients, 
             db.suppliers, db.quotes, db.income, db.productions, 
             db.rawMaterials
           ], async () => {
-            const syncTable = async (tableName: string, items: any[]) => {
-              if (!items || !Array.isArray(items)) return;
+            const syncTableSmart = async (tableName: string, importedItems: any[]) => {
+              if (!shouldSync(tableName) || !importedItems || !Array.isArray(importedItems)) return;
               const table = (db as any)[tableName];
-              const backupIds = new Set(items.map((x: any) => x.id));
-              const localItems = await table.toArray();
-              
-              // Remove local items not in imported backup JSON
-              const toRemove = localItems.filter((x: any) => !backupIds.has(x.id)).map((x: any) => x.id);
-              if (toRemove.length > 0) {
-                await table.bulkDelete(toRemove);
+              const localItems: any[] = await table.toArray();
+
+              // Carte des éléments locaux par clé naturelle
+              const localKeyMap = new Map<string, any>();
+              localItems.forEach(item => {
+                const k = getKeyForTable(tableName, item);
+                if (k) localKeyMap.set(k, item);
+              });
+
+              // Dédoublonnage du fichier d'importation lui-même
+              const importedKeyMap = new Map<string, any>();
+              importedItems.forEach(item => {
+                const k = getKeyForTable(tableName, item);
+                if (k && !importedKeyMap.has(k)) {
+                  importedKeyMap.set(k, item);
+                }
+              });
+
+              // 1. SUPPRESSION : Tout élément local n'existant pas dans le fichier importé est supprimé de cette section
+              const toDeleteIds: (number | string)[] = [];
+              localItems.forEach(localItem => {
+                const k = getKeyForTable(tableName, localItem);
+                if (k && !importedKeyMap.has(k)) {
+                  toDeleteIds.push(localItem.id);
+                }
+              });
+
+              if (toDeleteIds.length > 0) {
+                await table.bulkDelete(toDeleteIds);
+                deletedCount += toDeleteIds.length;
               }
-              
-              // Put/update items from imported backup JSON
-              if (items.length > 0) {
-                await table.bulkPut(items);
+
+              // 2. INSERTION / MISE À JOUR : Réutiliser les IDs locaux existants pour écraser sans créer de doublon
+              const itemsToPut: any[] = [];
+              importedKeyMap.forEach((importedItem, key) => {
+                const existingLocal = localKeyMap.get(key);
+                if (existingLocal) {
+                  itemsToPut.push({
+                    ...importedItem,
+                    id: existingLocal.id
+                  });
+                } else {
+                  itemsToPut.push(importedItem);
+                }
+              });
+
+              if (itemsToPut.length > 0) {
+                await table.bulkPut(itemsToPut);
               }
-              mergedCount += items.length;
+
+              mergedCount += itemsToPut.length;
             };
 
-            if (backup.inventory) await syncTable('inventory', backup.inventory);
-            if (backup.dailyRecords) await syncTable('dailyRecords', backup.dailyRecords);
-            if (backup.expenses) await syncTable('expenses', backup.expenses);
-            if (backup.clients) await syncTable('clients', backup.clients);
-            if (backup.suppliers) await syncTable('suppliers', backup.suppliers);
-            if (backup.quotes) await syncTable('quotes', backup.quotes);
-            if (backup.income) await syncTable('income', backup.income);
-            if (backup.productions) await syncTable('productions', backup.productions);
-            if (backup.rawMaterials) await syncTable('rawMaterials', backup.rawMaterials);
+            if (backup.inventory) await syncTableSmart('inventory', backup.inventory);
+            if (backup.dailyRecords) await syncTableSmart('dailyRecords', backup.dailyRecords);
+            if (backup.expenses) await syncTableSmart('expenses', backup.expenses);
+            if (backup.clients) await syncTableSmart('clients', backup.clients);
+            if (backup.suppliers) await syncTableSmart('suppliers', backup.suppliers);
+            if (backup.quotes) await syncTableSmart('quotes', backup.quotes);
+            if (backup.income) await syncTableSmart('income', backup.income);
+            if (backup.productions) await syncTableSmart('productions', backup.productions);
+            if (backup.rawMaterials) await syncTableSmart('rawMaterials', backup.rawMaterials);
           });
 
-          // Smart RH Mirror Sync: restore exact employee list from backup JSON
-          const localRH = await db.rhAppData.get('rh_app_data');
-          const backupRHList = backup.rhAppData || [];
-          const backupRH = backupRHList.find((x: any) => x.key === 'rh_app_data')?.value || 
-                           (backup.employees || backup.attendance ? backup : null);
+          // Restauration des Employés / RH si la section RH est ciblée
+          if (shouldSync('employees') || shouldSync('rhAppData') || shouldSync('personnel')) {
+            const localRH = await db.rhAppData.get('rh_app_data');
+            const backupRHList = backup.rhAppData || [];
+            const backupRH = backupRHList.find((x: any) => x.key === 'rh_app_data')?.value || 
+                             (backup.employees || backup.attendance ? backup : null);
 
-          if (backupRH) {
-            const backupEmployees = backupRH.employees || [];
-            const mergedAttendance = { ...(localRH?.value?.attendance || {}), ...(backupRH.attendance || {}) };
-            const mergedPayrollExtras = { ...(localRH?.value?.payrollExtras || {}), ...(backupRH.payrollExtras || {}) };
-            const mergedSundays = Array.from(new Set([...(localRH?.value?.visibleSundays || []), ...(backupRH.visibleSundays || [])]));
+            if (backupRH && backupRH.employees) {
+              // Dédoublonnage des employés par clé (prénom + nom)
+              const empMap = new Map<string, any>();
+              (backupRH.employees || []).forEach((emp: any) => {
+                const k = `${String(emp.prenom || '').trim().toLowerCase()}_${String(emp.nom || '').trim().toLowerCase()}`;
+                if (k && !empMap.has(k)) empMap.set(k, emp);
+              });
+              const cleanEmployees = Array.from(empMap.values());
 
-            const updatedRHValue = {
-              employees: backupEmployees, // Restores exact employee list from backup JSON
-              attendance: mergedAttendance,
-              payrollExtras: mergedPayrollExtras,
-              visibleSundays: mergedSundays
-            };
+              const updatedRHValue = {
+                employees: cleanEmployees, // Restauration miroir stricte
+                attendance: backupRH.attendance || localRH?.value?.attendance || {},
+                payrollExtras: backupRH.payrollExtras || localRH?.value?.payrollExtras || {},
+                visibleSundays: backupRH.visibleSundays || localRH?.value?.visibleSundays || []
+              };
 
-            await db.rhAppData.put({ key: 'rh_app_data', value: updatedRHValue });
-            mergedCount += backupEmployees.length;
+              await db.rhAppData.put({ key: 'rh_app_data', value: updatedRHValue });
+              mergedCount += cleanEmployees.length;
+            }
           }
 
-          // Trigger syncUp to push updated/restored data to Firestore
+          // Trigger syncUp to push clean data to Firestore
           try {
             await syncUp();
           } catch (syncErr) {
-            console.warn('Sync up after backup restore failed, will retry later:', syncErr);
+            console.warn('Sync up after restore failed:', syncErr);
           }
 
-          showToast(`Restauration et synchronisation complétées avec succès ! ${mergedCount} éléments synchronisés.`, 'success');
+          showToast(`Restauration terminée : ${mergedCount} éléments conservés/restaurés, ${deletedCount} anciens éléments non présents supprimés.`, 'success');
           (window as any).tempUploadedBackupData = null;
         } catch (err: any) {
           console.error(err);
-          showToast(`Erreur lors de la fusion : ${err.message}`, 'error');
+          showToast(`Erreur lors de la restauration : ${err.message}`, 'error');
         }
       }
     };
